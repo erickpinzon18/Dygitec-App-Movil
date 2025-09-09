@@ -1,14 +1,20 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User as FirebaseUser, onAuthStateChanged } from 'firebase/auth';
-import { auth } from '../config/firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import { auth, db } from '../config/firebase';
+import { Client, User } from '../types';
 
 interface AuthContextType {
-  user: FirebaseUser | null;
+  firebaseUser: FirebaseUser | null;
+  user: User | null;
+  client: Client | null;
   loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({
+  firebaseUser: null,
   user: null,
+  client: null,
   loading: true,
 });
 
@@ -21,12 +27,44 @@ export const useAuth = () => {
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [client, setClient] = useState<Client | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const fetchUserAndClientData = async (firebaseUserId: string) => {
+    try {
+      // Obtener información del usuario
+      const userDoc = await getDoc(doc(db, 'users', firebaseUserId));
+      if (userDoc.exists()) {
+        const userData = { id: userDoc.id, ...userDoc.data() } as User;
+        setUser(userData);
+
+        // Obtener información del cliente
+        const clientDoc = await getDoc(doc(db, 'clients', userData.clientId));
+        if (clientDoc.exists()) {
+          const clientData = { id: clientDoc.id, ...clientDoc.data() } as Client;
+          setClient(clientData);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching user and client data:', error);
+      setUser(null);
+      setClient(null);
+    }
+  };
+
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      setFirebaseUser(firebaseUser);
+      
+      if (firebaseUser) {
+        await fetchUserAndClientData(firebaseUser.uid);
+      } else {
+        setUser(null);
+        setClient(null);
+      }
+      
       setLoading(false);
     });
 
@@ -34,7 +72,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading }}>
+    <AuthContext.Provider value={{ firebaseUser, user, client, loading }}>
       {children}
     </AuthContext.Provider>
   );

@@ -20,20 +20,20 @@ import {
   Timestamp 
 } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
-import { User, Customer, Computer, Repair, Part, RepairWithDetails } from '../types';
+import { Client, User, Customer, Computer, Repair, Part, RepairWithDetails } from '../types';
 
 // Authentication services
 export const authService = {
-  signUp: async (email: string, password: string, name: string) => {
+  signUp: async (email: string, password: string, name: string, clientId: string, userType: string = 'user') => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
     
-    // Create user document
+    // Create user document with clientId
     await addDoc(collection(db, 'users'), {
       id: user.uid,
-      email: user.email,
+      clientId,
       name,
-      createdAt: Timestamp.now()
+      type: userType
     });
     
     return user;
@@ -52,6 +52,52 @@ export const authService = {
   }
 };
 
+// Client services
+export const clientService = {
+  create: async (clientData: Omit<Client, 'id'>) => {
+    const docRef = await addDoc(collection(db, 'clients'), clientData);
+    return docRef.id;
+  },
+
+  getById: async (id: string): Promise<Client | null> => {
+    const docSnap = await getDoc(doc(db, 'clients', id));
+    if (docSnap.exists()) {
+      return {
+        id: docSnap.id,
+        ...docSnap.data()
+      } as Client;
+    }
+    return null;
+  },
+
+  update: async (id: string, data: Partial<Client>) => {
+    await updateDoc(doc(db, 'clients', id), data);
+  }
+};
+
+// User services
+export const userService = {
+  getById: async (id: string): Promise<User | null> => {
+    const docSnap = await getDoc(doc(db, 'users', id));
+    if (docSnap.exists()) {
+      return {
+        id: docSnap.id,
+        ...docSnap.data()
+      } as User;
+    }
+    return null;
+  },
+
+  getByClientId: async (clientId: string): Promise<User[]> => {
+    const q = query(collection(db, 'users'), where('clientId', '==', clientId));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    })) as User[];
+  }
+};
+
 // Customer services
 export const customerService = {
   create: async (customerData: Omit<Customer, 'id' | 'createdAt'>) => {
@@ -62,8 +108,13 @@ export const customerService = {
     return docRef.id;
   },
 
-  getAll: async (): Promise<Customer[]> => {
-    const querySnapshot = await getDocs(collection(db, 'customers'));
+  getByClientId: async (clientId: string): Promise<Customer[]> => {
+    const q = query(
+      collection(db, 'customers'), 
+      where('clientId', '==', clientId),
+      orderBy('name')
+    );
+    const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
@@ -102,8 +153,26 @@ export const computerService = {
     return docRef.id;
   },
 
-  getByCustomerId: async (customerId: string): Promise<Computer[]> => {
-    const q = query(collection(db, 'computers'), where('customerId', '==', customerId));
+  getByClientId: async (clientId: string): Promise<Computer[]> => {
+    const q = query(
+      collection(db, 'computers'), 
+      where('clientId', '==', clientId),
+      orderBy('createdAt', 'desc')
+    );
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      createdAt: doc.data().createdAt.toDate()
+    })) as Computer[];
+  },
+
+  getByCustomerId: async (customerId: string, clientId: string): Promise<Computer[]> => {
+    const q = query(
+      collection(db, 'computers'), 
+      where('customerId', '==', customerId),
+      where('clientId', '==', clientId)
+    );
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({
       id: doc.id,
@@ -147,8 +216,12 @@ export const repairService = {
     return docRef.id;
   },
 
-  getAll: async (): Promise<Repair[]> => {
-    const q = query(collection(db, 'repairs'), orderBy('createdAt', 'desc'));
+  getByClientId: async (clientId: string): Promise<Repair[]> => {
+    const q = query(
+      collection(db, 'repairs'), 
+      where('clientId', '==', clientId),
+      orderBy('createdAt', 'desc')
+    );
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({
       id: doc.id,
@@ -161,10 +234,11 @@ export const repairService = {
     })) as Repair[];
   },
 
-  getByStatus: async (status: string): Promise<Repair[]> => {
+  getByStatus: async (status: string, clientId: string): Promise<Repair[]> => {
     const q = query(
       collection(db, 'repairs'), 
       where('status', '==', status),
+      where('clientId', '==', clientId),
       orderBy('createdAt', 'desc')
     );
     const querySnapshot = await getDocs(q);
@@ -230,8 +304,12 @@ export const partService = {
     return docRef.id;
   },
 
-  getAll: async (): Promise<Part[]> => {
-    const q = query(collection(db, 'parts'), orderBy('name'));
+  getByClientId: async (clientId: string): Promise<Part[]> => {
+    const q = query(
+      collection(db, 'parts'), 
+      where('clientId', '==', clientId),
+      orderBy('name')
+    );
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({
       id: doc.id,
@@ -241,10 +319,11 @@ export const partService = {
     })) as Part[];
   },
 
-  searchByCompatibility: async (compatibility: string): Promise<Part[]> => {
+  searchByCompatibility: async (compatibility: string, clientId: string): Promise<Part[]> => {
     const q = query(
       collection(db, 'parts'),
-      where('compatibility', 'array-contains', compatibility)
+      where('compatibility', 'array-contains', compatibility),
+      where('clientId', '==', clientId)
     );
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({

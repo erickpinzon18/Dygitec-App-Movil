@@ -1,33 +1,44 @@
 // Type definitions for the Dygitec app
 
+export interface Client {
+  id: string;
+  name: string;
+  address: string;
+}
+
 export interface User {
   id: string;
-  email: string;
+  clientId: string;
   name: string;
-  createdAt: Date;
+  type: UserType;
 }
 
 export interface Customer {
   id: string;
+  clientId: string;
   name: string;
   phone: string;
   email?: string;
+  registerBy: string;
   createdAt: Date;
 }
 
 export interface Computer {
   id: string;
+  clientId: string;
   customerId: string;
   brand: string;
   model: string;
   year?: number;
   serialNumber?: string;
   description?: string;
+  registerBy: string;
   createdAt: Date;
 }
 
 export interface Repair {
   id: string;
+  clientId: string;
   computerId: string;
   customerId: string;
   title: string;
@@ -39,12 +50,14 @@ export interface Repair {
   completionDate?: Date;
   cost?: number;
   notes?: string;
+  registerBy: string;
   createdAt: Date;
   updatedAt: Date;
 }
 
 export interface Part {
   id: string;
+  clientId: string;
   name: string;
   brand: string;
   model: string;
@@ -54,8 +67,14 @@ export interface Part {
   cost: number;
   location?: string;
   notes?: string;
+  registerBy: string;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export enum UserType {
+  ADMIN = 'admin',
+  USER = 'user'
 }
 
 export enum RepairStatus {

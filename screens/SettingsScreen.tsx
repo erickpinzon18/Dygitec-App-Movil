@@ -13,10 +13,12 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { authService } from '../services/firebase';
 import { SettingsStackParamList } from '../types/navigation';
 import { colors, typography, spacing, shadows } from '../constants/theme';
+import { useAuth } from '../contexts/AuthContext';
 
 type SettingsScreenProps = NativeStackScreenProps<SettingsStackParamList, 'SettingsList'>;
 
 export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
+  const { client, user } = useAuth();
   const handleSignOut = async () => {
     Alert.alert(
       'Cerrar Sesión',
@@ -103,8 +105,23 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
           <SettingsItem
             icon="business-outline"
             title="Información del Negocio"
-            subtitle="Datos de la empresa"
-            onPress={() => Alert.alert('Próximamente', 'Esta función estará disponible pronto')}
+            subtitle={client?.name || "Cargando..."}
+            onPress={() => Alert.alert(
+              'Información del Negocio',
+              `Empresa: ${client?.name || 'No disponible'}\nDirección: ${client?.address || 'No disponible'}`,
+              [{ text: 'OK' }]
+            )}
+          />
+          
+          <SettingsItem
+            icon="person-outline"
+            title="Información del Usuario"
+            subtitle={user?.name || "Cargando..."}
+            onPress={() => Alert.alert(
+              'Información del Usuario',
+              `Nombre: ${user?.name || 'No disponible'}\nTipo: ${user?.type === 'admin' ? 'Administrador' : 'Usuario'}\nEmpresa: ${client?.name || 'No disponible'}`,
+              [{ text: 'OK' }]
+            )}
           />
           
           {/* <SettingsItem

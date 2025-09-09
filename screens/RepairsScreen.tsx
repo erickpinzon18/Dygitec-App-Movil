@@ -18,10 +18,12 @@ import { Repair, RepairWithDetails, RepairStatus } from '../types';
 import { RepairsStackParamList } from '../types/navigation';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { colors, typography, spacing, shadows } from '../constants/theme';
+import { useAuth } from '../contexts/AuthContext';
 
 type RepairsScreenProps = NativeStackScreenProps<RepairsStackParamList, 'RepairsList'>;
 
 export const RepairsScreen: React.FC<RepairsScreenProps> = ({ navigation }) => {
+  const { client } = useAuth();
   const [repairs, setRepairs] = useState<RepairWithDetails[]>([]);
   const [filteredRepairs, setFilteredRepairs] = useState<RepairWithDetails[]>([]);
   const [loading, setLoading] = useState(false); // Cambiado a false para evitar loader inicial
@@ -31,13 +33,17 @@ export const RepairsScreen: React.FC<RepairsScreenProps> = ({ navigation }) => {
 
   // Cargar reparaciones cuando cambie el filtro
   useEffect(() => {
-    loadRepairs();
-  }, [filter]);
+    if (client) {
+      loadRepairs();
+    }
+  }, [filter, client]);
 
   // Carga inicial cuando se monta el componente
   useEffect(() => {
-    loadRepairs();
-  }, []);
+    if (client) {
+      loadRepairs();
+    }
+  }, [client]);
 
   // Filtrar reparaciones cuando cambien los parámetros de búsqueda
   useEffect(() => {
@@ -47,11 +53,15 @@ export const RepairsScreen: React.FC<RepairsScreenProps> = ({ navigation }) => {
   // Recargar datos cada vez que la pantalla se enfoque (para ver cambios actualizados)
   useFocusEffect(
     React.useCallback(() => {
-      loadRepairs();
-    }, [filter])
+      if (client) {
+        loadRepairs();
+      }
+    }, [filter, client])
   );
 
   const loadRepairs = async (isRefreshing = false) => {
+    if (!client) return;
+    
     try {
       if (isRefreshing) {
         setRefreshing(true);
@@ -62,9 +72,9 @@ export const RepairsScreen: React.FC<RepairsScreenProps> = ({ navigation }) => {
       let repairsData: Repair[];
       
       if (filter === 'all') {
-        repairsData = await repairService.getAll();
+        repairsData = await repairService.getByClientId(client.id);
       } else {
-        repairsData = await repairService.getByStatus(filter);
+        repairsData = await repairService.getByStatus(filter, client.id);
       }
 
       // Load customer and computer details for each repair

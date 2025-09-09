@@ -15,10 +15,12 @@ import { RepairsStackParamList } from '../types/navigation';
 import { Button } from '../components/Button';
 import { InputField } from '../components/InputField';
 import { colors, typography, spacing } from '../constants/theme';
+import { useAuth } from '../contexts/AuthContext';
 
 type NewRepairScreenProps = NativeStackScreenProps<RepairsStackParamList, 'NewRepair'>;
 
 export const NewRepairScreen: React.FC<NewRepairScreenProps> = ({ navigation }) => {
+  const { client, user } = useAuth();
   const [formData, setFormData] = useState({
     // Customer info
     customerName: '',
@@ -82,11 +84,15 @@ export const NewRepairScreen: React.FC<NewRepairScreenProps> = ({ navigation }) 
     try {
       // Create customer
       console.log('Creating customer with data:', {
+        clientId: client!.id,
+        registerBy: user!.id,
         name: formData.customerName,
         phone: formData.customerPhone,
         email: formData.customerEmail || "",
       });
       const customerId = await customerService.create({
+        clientId: client!.id,
+        registerBy: user!.id,
         name: formData.customerName,
         phone: formData.customerPhone,
         email: formData.customerEmail || "",
@@ -94,6 +100,8 @@ export const NewRepairScreen: React.FC<NewRepairScreenProps> = ({ navigation }) 
 
       // Create computer
       const computerId = await computerService.create({
+        clientId: client!.id,
+        registerBy: user!.id,
         customerId,
         brand: formData.computerBrand,
         model: formData.computerModel,
@@ -125,6 +133,8 @@ export const NewRepairScreen: React.FC<NewRepairScreenProps> = ({ navigation }) 
 
       // Create repair
       const repairId = await repairService.create({
+        clientId: client!.id,
+        registerBy: user!.id,
         customerId,
         computerId,
         title: formData.title,

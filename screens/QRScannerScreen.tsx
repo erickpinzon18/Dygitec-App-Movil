@@ -16,6 +16,7 @@ import { CompositeScreenProps } from '@react-navigation/native';
 import { repairService, partService } from '../services/firebase';
 import { RootStackParamList, TabParamList } from '../types/navigation';
 import { colors, typography, spacing } from '../constants/theme';
+import { useAuth } from '../contexts/AuthContext';
 
 type QRScannerScreenProps = CompositeScreenProps<
   BottomTabScreenProps<TabParamList, 'QR'>,
@@ -23,6 +24,7 @@ type QRScannerScreenProps = CompositeScreenProps<
 >;
 
 export const QRScannerScreen: React.FC<QRScannerScreenProps> = ({ navigation }) => {
+  const { client } = useAuth();
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [scanned, setScanned] = useState(false);
   const [scanning, setScanning] = useState(true);
@@ -56,9 +58,9 @@ export const QRScannerScreen: React.FC<QRScannerScreenProps> = ({ navigation }) 
       const [qrType, itemId] = qrParts;
 
       if (qrType === 'repair') {
-        // Verificar que la reparación existe
+        // Verificar que la reparación existe y pertenece al cliente
         const repair = await repairService.getById(itemId);
-        if (repair) {
+        if (repair && repair.clientId === client?.id) {
           Alert.alert(
             'Reparación Encontrada',
             `¿Abrir detalles de la reparación: ${repair.description}?`,
@@ -72,6 +74,12 @@ export const QRScannerScreen: React.FC<QRScannerScreenProps> = ({ navigation }) 
               }
             ]
           );
+        } else if (repair && repair.clientId !== client?.id) {
+          Alert.alert(
+            'Reparación No Permitida',
+            'Esta reparación no pertenece a su empresa.',
+            [{ text: 'Escanear Otro', onPress: () => resetScanner() }]
+          );
         } else {
           Alert.alert(
             'Reparación No Encontrada',
@@ -80,9 +88,9 @@ export const QRScannerScreen: React.FC<QRScannerScreenProps> = ({ navigation }) 
           );
         }
       } else if (qrType === 'part') {
-        // Verificar que la pieza existe
+        // Verificar que la pieza existe y pertenece al cliente
         const part = await partService.getById(itemId);
-        if (part) {
+        if (part && part.clientId === client?.id) {
           Alert.alert(
             'Pieza Encontrada',
             `¿Abrir detalles de la pieza: ${part.name}?`,
@@ -95,6 +103,12 @@ export const QRScannerScreen: React.FC<QRScannerScreenProps> = ({ navigation }) 
                 }
               }
             ]
+          );
+        } else if (part && part.clientId !== client?.id) {
+          Alert.alert(
+            'Pieza No Permitida',
+            'Esta pieza no pertenece a su empresa.',
+            [{ text: 'Escanear Otro', onPress: () => resetScanner() }]
           );
         } else {
           Alert.alert(

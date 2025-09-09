@@ -17,10 +17,12 @@ import { Part } from '../types';
 import { PartsStackParamList } from '../types/navigation';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { colors, typography, spacing, shadows } from '../constants/theme';
+import { useAuth } from '../contexts/AuthContext';
 
 type PartsScreenProps = NativeStackScreenProps<PartsStackParamList, 'PartsList'>;
 
 export const PartsScreen: React.FC<PartsScreenProps> = ({ navigation }) => {
+  const { client } = useAuth();
   const [parts, setParts] = useState<Part[]>([]);
   const [filteredParts, setFilteredParts] = useState<Part[]>([]);
   const [loading, setLoading] = useState(false); // Cambiado a false para evitar loader inicial
@@ -30,14 +32,18 @@ export const PartsScreen: React.FC<PartsScreenProps> = ({ navigation }) => {
 
   // Carga inicial cuando se monta el componente
   useEffect(() => {
-    loadParts();
-  }, []);
+    if (client) {
+      loadParts();
+    }
+  }, [client]);
 
   // Recargar datos cada vez que la pantalla se enfoque (para ver cambios actualizados)
   useFocusEffect(
     React.useCallback(() => {
-      loadParts();
-    }, [])
+      if (client) {
+        loadParts();
+      }
+    }, [client])
   );
 
   useEffect(() => {
@@ -45,6 +51,8 @@ export const PartsScreen: React.FC<PartsScreenProps> = ({ navigation }) => {
   }, [parts, searchQuery, selectedCategory]);
 
   const loadParts = async (isRefreshing = false) => {
+    if (!client) return;
+    
     try {
       if (isRefreshing) {
         setRefreshing(true);
@@ -52,9 +60,10 @@ export const PartsScreen: React.FC<PartsScreenProps> = ({ navigation }) => {
         setLoading(true);
       }
       
-      const partsData = await partService.getAll();
+      const partsData = await partService.getByClientId(client.id);
       setParts(partsData);
     } catch (error) {
+      console.error('Error loading parts:', error);
       Alert.alert('Error', 'No se pudieron cargar las piezas');
     } finally {
       setLoading(false);

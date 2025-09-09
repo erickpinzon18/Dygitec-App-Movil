@@ -14,10 +14,12 @@ import { PartsStackParamList } from '../types/navigation';
 import { Button } from '../components/Button';
 import { InputField } from '../components/InputField';
 import { colors, typography, spacing } from '../constants/theme';
+import { useAuth } from '../contexts/AuthContext';
 
 type NewPartScreenProps = NativeStackScreenProps<PartsStackParamList, 'NewPart'>;
 
 export const NewPartScreen: React.FC<NewPartScreenProps> = ({ navigation }) => {
+  const { client, user } = useAuth();
   const [formData, setFormData] = useState({
     name: '',
     brand: '',
@@ -75,6 +77,8 @@ export const NewPartScreen: React.FC<NewPartScreenProps> = ({ navigation }) => {
         .filter(item => item.length > 0);
 
       const partId = await partService.create({
+        clientId: client!.id,
+        registerBy: user!.id,
         name: formData.name,
         brand: formData.brand,
         model: formData.model,

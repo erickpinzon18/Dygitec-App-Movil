@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { authService } from '../services/firebase';
+import { authService, clientService } from '../services/firebase';
 import { RootStackParamList } from '../types/navigation';
 import { Button } from '../components/Button';
 import { InputField } from '../components/InputField';
@@ -21,12 +21,16 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [companyName, setCompanyName] = useState('');
+  const [companyAddress, setCompanyAddress] = useState('');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{
     name?: string;
     email?: string;
     password?: string;
     confirmPassword?: string;
+    companyName?: string;
+    companyAddress?: string;
   }>({});
 
   const validateForm = () => {
@@ -35,6 +39,8 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
       email?: string;
       password?: string;
       confirmPassword?: string;
+      companyName?: string;
+      companyAddress?: string;
     } = {};
 
     if (!name.trim()) {
@@ -59,6 +65,14 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
       newErrors.confirmPassword = 'Las contraseñas no coinciden';
     }
 
+    if (!companyName.trim()) {
+      newErrors.companyName = 'El nombre de la empresa es requerido';
+    }
+
+    if (!companyAddress.trim()) {
+      newErrors.companyAddress = 'La dirección de la empresa es requerida';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -68,8 +82,16 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
 
     setLoading(true);
     try {
-      await authService.signUp(email, password, name);
-      Alert.alert('Éxito', 'Cuenta creada exitosamente');
+      // Primero crear el cliente (empresa)
+      const clientId = await clientService.create({
+        name: companyName.trim(),
+        address: companyAddress.trim()
+      });
+
+      // Luego crear el usuario como administrador del cliente
+      await authService.signUp(email, password, name, clientId, 'admin');
+      
+      Alert.alert('Éxito', 'Cuenta y empresa creadas exitosamente');
       // Navigation will be handled by AuthContext
     } catch (error: any) {
       Alert.alert('Error', getFirebaseErrorMessage(error.code));
@@ -95,11 +117,13 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         <View style={styles.header}>
-          <Text style={styles.title}>Crear Cuenta</Text>
-          <Text style={styles.subtitle}>Únete a Dygitec</Text>
+          <Text style={styles.title}>Crear Empresa</Text>
+          <Text style={styles.subtitle}>Registra tu empresa en Dygitec</Text>
         </View>
 
         <View style={styles.form}>
+          <Text style={styles.sectionTitle}>Información Personal</Text>
+          
           <InputField
             label="Nombre completo"
             value={name}
@@ -136,8 +160,26 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
             placeholder="••••••••"
           />
 
+          <Text style={styles.sectionTitle}>Información de la Empresa</Text>
+          
+          <InputField
+            label="Nombre de la empresa"
+            value={companyName}
+            onChangeText={setCompanyName}
+            error={errors.companyName}
+            placeholder="Nombre de tu empresa"
+          />
+
+          <InputField
+            label="Dirección de la empresa"
+            value={companyAddress}
+            onChangeText={setCompanyAddress}
+            error={errors.companyAddress}
+            placeholder="Dirección de tu empresa"
+          />
+
           <Button
-            title={loading ? 'Creando cuenta...' : 'Crear Cuenta'}
+            title={loading ? 'Creando empresa...' : 'Crear Empresa'}
             onPress={handleRegister}
             disabled={loading}
             style={styles.registerButton}
@@ -161,11 +203,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+    marginTop: 40,
   },
   content: {
     flex: 1,
     paddingHorizontal: spacing.lg,
     justifyContent: 'center',
+    marginTop: 30
   },
   header: {
     alignItems: 'center',
@@ -182,6 +226,12 @@ const styles = StyleSheet.create({
   },
   form: {
     width: '100%',
+  },
+  sectionTitle: {
+    ...typography.h3,
+    color: colors.text,
+    marginTop: spacing.lg,
+    marginBottom: spacing.md,
   },
   registerButton: {
     marginTop: spacing.lg,
