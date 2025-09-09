@@ -1,7 +1,9 @@
 # Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
-# dependencies
+# Dependencies
 node_modules/
+npm-debug.log
+yarn-error.log
 
 # Expo
 .expo/
@@ -21,7 +23,7 @@ expo-env.d.ts
 # Metro
 .metro-health-check*
 
-# debug
+# Debug
 npm-debug.*
 yarn-debug.*
 yarn-error.*
@@ -30,8 +32,83 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# local env files
+# Environment variables
+.env
 .env*.local
+.env.development.local
+.env.test.local
+.env.production.local
 
-# typescript
+# TypeScript
 *.tsbuildinfo
+
+# Firebase configuration (sensitive)
+google-services.json
+GoogleService-Info.plist
+firebase.json
+.firebase/
+firebase-debug.log
+
+# Caches and temporary files
+.cache/
+.parcel-cache/
+*.log
+.tmp/
+.temp/
+coverage/
+.nyc_output
+.jest/
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Build artifacts
+*.apk
+*.aab
+*.ipa
+build/
+android/app/build/
+android/build/
+android/.gradle/
+android/captures/
+ios/build/
+ios/DerivedData/
+
+# Testing
+coverage/
+.jest/
+
+# Bundle analyzer
+web-report/
+
+# Storybook
+storybook-static/
+
+# User uploads and temp assets
+assets/images/temp/
+assets/uploads/
+
+# Flipper
+ios/Pods/Flipper*
+
+# Fastlane
+ios/fastlane/report.xml
+ios/fastlane/Preview.html
+ios/fastlane/screenshots
+ios/fastlane/test_output
+android/fastlane/report.xml
+android/fastlane/Preview.html
+android/fastlane/screenshots
+android/fastlane/test_output
