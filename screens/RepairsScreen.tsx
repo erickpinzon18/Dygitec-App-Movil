@@ -13,7 +13,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
-import { repairService, customerService, computerService } from '../services/firebase';
+import { repairService, customerService, equipmentService } from '../services/firebase';
 import { Repair, RepairWithDetails, RepairStatus } from '../types';
 import { RepairsStackParamList } from '../types/navigation';
 import { LoadingSpinner } from '../components/LoadingSpinner';
@@ -69,29 +69,28 @@ export const RepairsScreen: React.FC<RepairsScreenProps> = ({ navigation }) => {
         setLoading(true);
       }
       
-      let repairsData: Repair[];
+      let repairsWithDetails: RepairWithDetails[];
       
       if (filter === 'all') {
-        repairsData = await repairService.getByClientId(client.id);
+        repairsWithDetails = await repairService.getWithDetails(client.id);
       } else {
-        repairsData = await repairService.getByStatus(filter, client.id);
+        const repairsData = await repairService.getByStatus(filter, client.id);
+        // Get details for filtered repairs
+        repairsWithDetails = await Promise.all(
+          repairsData.map(async (repair) => {
+            const [customer, equipment] = await Promise.all([
+              customerService.getById(repair.customerId),
+              equipmentService.getById(repair.equipmentId),
+            ]);
+
+            return {
+              ...repair,
+              customer: customer!,
+              equipment: equipment!,
+            };
+          })
+        );
       }
-
-      // Load customer and computer details for each repair
-      const repairsWithDetails: RepairWithDetails[] = await Promise.all(
-        repairsData.map(async (repair) => {
-          const [customer, computer] = await Promise.all([
-            customerService.getById(repair.customerId),
-            computerService.getById(repair.computerId),
-          ]);
-
-          return {
-            ...repair,
-            customer: customer!,
-            computer: computer!,
-          };
-        })
-      );
 
       setRepairs(repairsWithDetails);
     } catch (error) {
@@ -118,9 +117,9 @@ export const RepairsScreen: React.FC<RepairsScreenProps> = ({ navigation }) => {
         repair.customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (repair.customer.email && repair.customer.email.toLowerCase().includes(searchQuery.toLowerCase())) ||
         repair.customer.phone.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        repair.computer.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        repair.computer.model.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (repair.computer.serialNumber && repair.computer.serialNumber.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        repair.equipment.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        repair.equipment.model.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (repair.equipment.serialNumber && repair.equipment.serialNumber.toLowerCase().includes(searchQuery.toLowerCase())) ||
         (repair.notes && repair.notes.toLowerCase().includes(searchQuery.toLowerCase()))
       );
     }
@@ -180,7 +179,7 @@ export const RepairsScreen: React.FC<RepairsScreenProps> = ({ navigation }) => {
 
       <Text style={styles.customerName}>{item.customer.name}</Text>
       <Text style={styles.computerInfo}>
-        {item.computer.brand} {item.computer.model}
+        {item.equipment.brand} {item.equipment.model}
       </Text>
 
       <View style={styles.repairFooter}>
@@ -225,7 +224,7 @@ export const RepairsScreen: React.FC<RepairsScreenProps> = ({ navigation }) => {
         <Text style={styles.headerTitle}>Registros</Text>
         <TouchableOpacity
           style={styles.addButton}
-          onPress={() => navigation.navigate('NewRepair')}
+          onPress={() => navigation.navigate('NewRepair', {})}
         >
           <Ionicons name="add" size={24} color={colors.background} />
         </TouchableOpacity>

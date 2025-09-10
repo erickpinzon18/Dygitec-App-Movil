@@ -21,7 +21,7 @@ type QRDisplayScreenProps = NativeStackScreenProps<RootStackParamList, 'BarcodeD
 
 interface QRDisplayParams {
   id: string;
-  type: 'repair' | 'part';
+  type: 'repair' | 'part' | 'equipment';
   title: string;
   subtitle?: string;
 }
@@ -35,9 +35,22 @@ export const BarcodeDisplayScreen: React.FC<QRDisplayScreenProps> = ({
   const qrRef = useRef<ViewShot>(null);
 
   // Generar datos para el código QR (versión simplificada)
-  const generateQRData = (id: string, type: 'repair' | 'part') => {
+  const generateQRData = (id: string, type: 'repair' | 'part' | 'equipment') => {
     // Solo el ID y tipo, para máxima simplicidad y legibilidad
     return `${type}:${id}`;
+  };
+
+  const getTypeInfo = (type: 'repair' | 'part' | 'equipment') => {
+    switch (type) {
+      case 'repair':
+        return { emoji: '🔧', name: 'Reparación' };
+      case 'part':
+        return { emoji: '📦', name: 'Pieza' };
+      case 'equipment':
+        return { emoji: '💻', name: 'Equipo' };
+      default:
+        return { emoji: '📋', name: 'Elemento' };
+    }
   };
 
   const qrData = generateQRData(id, type);
@@ -69,13 +82,13 @@ export const BarcodeDisplayScreen: React.FC<QRDisplayScreenProps> = ({
           // Compartir solo la imagen
           await Share.share({
             url: imageUri,
-            title: `${type === 'repair' ? 'Reparación' : 'Pieza'}: ${title}`,
+            title: `${getTypeInfo(type).name}: ${title}`,
           });
         } else {
           // Fallback: compartir imagen de manera general
           await Share.share({
             url: imageUri,
-            title: `Código QR - ${type === 'repair' ? 'Reparación' : 'Pieza'}: ${title}`,
+            title: `Código QR - ${getTypeInfo(type).name}: ${title}`,
           });
         }
       } else {
@@ -151,7 +164,7 @@ export const BarcodeDisplayScreen: React.FC<QRDisplayScreenProps> = ({
       if (imageUri) {
         await Share.share({
           url: imageUri,
-          title: `Código QR - ${type === 'repair' ? 'Reparación' : 'Pieza'}: ${title}`,
+          title: `Código QR - ${getTypeInfo(type).name}: ${title}`,
         });
       } else {
         Alert.alert('Error', 'No se pudo generar la imagen del código QR');
@@ -203,7 +216,7 @@ export const BarcodeDisplayScreen: React.FC<QRDisplayScreenProps> = ({
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>
-            {type === 'repair' ? '🔧 Código QR de Reparación' : '📦 Código QR de Pieza'}
+            {getTypeInfo(type).emoji} Código QR de {getTypeInfo(type).name}
           </Text>
         </View>
 
@@ -219,7 +232,7 @@ export const BarcodeDisplayScreen: React.FC<QRDisplayScreenProps> = ({
 
           <View style={styles.codeSection}>
             <Text style={styles.codeLabel}>Tipo:</Text>
-            <Text style={styles.barcodeNumber}>{type === 'repair' ? 'Reparación' : 'Pieza'}</Text>
+            <Text style={styles.barcodeNumber}>{getTypeInfo(type).name}</Text>
           </View>
         </View>
 

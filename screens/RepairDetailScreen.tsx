@@ -99,7 +99,6 @@ export const RepairDetailScreen: React.FC<RepairDetailScreenProps> = ({
                 notes: formData.notes || "",
                 cost: formData.cost ? parseFloat(formData.cost) : 0,
             };
-            console.log("Form Data:", updateData);
 
             if (formData.cost) {
                 updateData.cost = parseFloat(formData.cost);
@@ -191,34 +190,34 @@ export const RepairDetailScreen: React.FC<RepairDetailScreenProps> = ({
                     )}
                 </View>
 
-                {/* Computer Information */}
+                {/* Equipment Information */}
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Equipo</Text>
                     <View style={styles.infoRow}>
                         <Text style={styles.label}>Marca:</Text>
                         <Text style={styles.value}>
-                            {repair?.computer?.brand || ""}
+                            {repair?.equipment?.brand || ""}
                         </Text>
                     </View>
                     <View style={styles.infoRow}>
                         <Text style={styles.label}>Modelo:</Text>
                         <Text style={styles.value}>
-                            {repair?.computer?.model || ""}
+                            {repair?.equipment?.model || ""}
                         </Text>
                     </View>
-                    {repair?.computer?.year && (
+                    {repair?.equipment?.year && (
                         <View style={styles.infoRow}>
                             <Text style={styles.label}>Año:</Text>
                             <Text style={styles.value}>
-                                {repair?.computer?.year || ""}
+                                {repair?.equipment?.year || ""}
                             </Text>
                         </View>
                     )}
-                    {repair?.computer?.serialNumber && (
+                    {repair?.equipment?.serialNumber && (
                         <View style={styles.infoRow}>
                             <Text style={styles.label}>Serie:</Text>
                             <Text style={styles.value}>
-                                {repair?.computer?.serialNumber || ""}
+                                {repair?.equipment?.serialNumber || ""}
                             </Text>
                         </View>
                     )}
@@ -428,7 +427,7 @@ export const RepairDetailScreen: React.FC<RepairDetailScreenProps> = ({
                                             id: repair.id,
                                             type: 'repair' as const,
                                             title: repair.title,
-                                            subtitle: `${repair.computer?.brand} ${repair.computer?.model}`,
+                                            subtitle: `${repair.equipment?.brand} ${repair.equipment?.model}`,
                                         });
                                     }
                                 }}

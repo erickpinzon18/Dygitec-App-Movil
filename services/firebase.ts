@@ -20,7 +20,7 @@ import {
   Timestamp 
 } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
-import { Client, User, Customer, Computer, Repair, Part, RepairWithDetails } from '../types';
+import { Client, User, Customer, Computer, Equipment, Repair, Part, RepairWithDetails, EquipmentWithDetails, CustomerWithStats, RepairStatus } from '../types';
 
 // Authentication services
 export const authService = {
@@ -122,6 +122,38 @@ export const customerService = {
     })) as Customer[];
   },
 
+  getWithStats: async (clientId: string): Promise<CustomerWithStats[]> => {
+    const customers = await customerService.getByClientId(clientId);
+    const customersWithStats = await Promise.all(customers.map(async (customer) => {
+      const equipments = await equipmentService.getByCustomerId(customer.id, clientId);
+      const totalEquipments = equipments.length;
+      
+      // Count repairs for all customer's equipments
+      let totalRepairs = 0;
+      let activeRepairs = 0;
+      
+      for (const equipment of equipments) {
+        const equipmentRepairs = await repairService.getByEquipmentId(equipment.id, clientId);
+        totalRepairs += equipmentRepairs.length;
+        activeRepairs += equipmentRepairs.filter(repair => 
+          repair.status === RepairStatus.PENDING || repair.status === RepairStatus.IN_PROGRESS
+        ).length;
+      }
+
+      return {
+        ...customer,
+        equipmentCount: totalEquipments,
+        repairCount: totalRepairs,
+        totalEquipments: totalEquipments,
+        totalRepairs: totalRepairs,
+        activeRepairs: activeRepairs,
+        lastRepairDate: totalRepairs > 0 ? equipments[0].updatedAt : undefined
+      };
+    }));
+    
+    return customersWithStats;
+  },
+
   getById: async (id: string): Promise<Customer | null> => {
     const docSnap = await getDoc(doc(db, 'customers', id));
     if (docSnap.exists()) {
@@ -143,7 +175,7 @@ export const customerService = {
   }
 };
 
-// Computer services
+// Computer services (maintained for compatibility)
 export const computerService = {
   create: async (computerData: Omit<Computer, 'id' | 'createdAt'>) => {
     const docRef = await addDoc(collection(db, 'computers'), {
@@ -202,6 +234,138 @@ export const computerService = {
   }
 };
 
+// Equipment services (new primary entity)
+export const equipmentService = {
+  create: async (equipmentData: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>) => {
+    const docRef = await addDoc(collection(db, 'equipments'), {
+      ...equipmentData,
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now()
+    });
+    return docRef.id;
+  },
+
+  getByClientId: async (clientId: string): Promise<Equipment[]> => {
+    const q = query(
+      collection(db, 'equipments'), 
+      where('clientId', '==', clientId),
+      orderBy('createdAt', 'desc')
+    );
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      createdAt: doc.data().createdAt.toDate(),
+      updatedAt: doc.data().updatedAt?.toDate()
+    })) as Equipment[];
+  },
+
+  getWithDetails: async (clientId: string): Promise<EquipmentWithDetails[]> => {
+    const equipments = await equipmentService.getByClientId(clientId);
+    const equipmentsWithDetails = await Promise.all(equipments.map(async (equipment) => {
+      const customer = await customerService.getById(equipment.customerId);
+      const repairs = await repairService.getByEquipmentId(equipment.id, clientId);
+      const activeRepairs = repairs.filter(repair => 
+        repair.status === RepairStatus.PENDING || repair.status === RepairStatus.IN_PROGRESS
+      );
+      
+      return {
+        ...equipment,
+        customer: customer!,
+        repairs,
+        repairCount: repairs.length,
+        activeRepairsCount: activeRepairs.length,
+        lastRepairDate: repairs.length > 0 ? repairs[0].createdAt : undefined
+      };
+    }));
+    
+    return equipmentsWithDetails;
+  },
+
+  getByCustomerId: async (customerId: string, clientId: string): Promise<Equipment[]> => {
+    const q = query(
+      collection(db, 'equipments'), 
+      where('customerId', '==', customerId),
+      where('clientId', '==', clientId),
+      orderBy('createdAt', 'desc')
+    );
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      createdAt: doc.data().createdAt.toDate(),
+      updatedAt: doc.data().updatedAt?.toDate()
+    })) as Equipment[];
+  },
+
+  getByCustomerIdWithDetails: async (customerId: string, clientId: string): Promise<EquipmentWithDetails[]> => {
+    const equipments = await equipmentService.getByCustomerId(customerId, clientId);
+    const customer = await customerService.getById(customerId);
+    
+    const equipmentsWithDetails = await Promise.all(equipments.map(async (equipment) => {
+      const repairs = await repairService.getByEquipmentId(equipment.id, clientId);
+      const activeRepairs = repairs.filter(repair => 
+        repair.status === RepairStatus.PENDING || repair.status === RepairStatus.IN_PROGRESS
+      );
+      
+      return {
+        ...equipment,
+        customer: customer!,
+        repairs,
+        repairCount: repairs.length,
+        activeRepairsCount: activeRepairs.length,
+        lastRepairDate: repairs.length > 0 ? repairs[0].createdAt : undefined
+      };
+    }));
+    
+    return equipmentsWithDetails;
+  },
+
+  getById: async (id: string): Promise<Equipment | null> => {
+    const docSnap = await getDoc(doc(db, 'equipments', id));
+    if (docSnap.exists()) {
+      return {
+        id: docSnap.id,
+        ...docSnap.data(),
+        createdAt: docSnap.data().createdAt.toDate(),
+        updatedAt: docSnap.data().updatedAt?.toDate()
+      } as Equipment;
+    }
+    return null;
+  },
+
+  getByCode: async (code: string, clientId: string): Promise<Equipment | null> => {
+    const q = query(
+      collection(db, 'equipments'),
+      where('code', '==', code),
+      where('clientId', '==', clientId)
+    );
+    const querySnapshot = await getDocs(q);
+    
+    if (!querySnapshot.empty) {
+      const doc = querySnapshot.docs[0];
+      return {
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt.toDate(),
+        updatedAt: doc.data().updatedAt?.toDate()
+      } as Equipment;
+    }
+    return null;
+  },
+
+  update: async (id: string, data: Partial<Equipment>) => {
+    await updateDoc(doc(db, 'equipments', id), {
+      ...data,
+      updatedAt: Timestamp.now()
+    });
+  },
+
+  delete: async (id: string) => {
+    await deleteDoc(doc(db, 'equipments', id));
+  }
+};
+
 // Repair services
 export const repairService = {
   create: async (repairData: Omit<Repair, 'id' | 'createdAt' | 'updatedAt'>) => {
@@ -234,10 +398,50 @@ export const repairService = {
     })) as Repair[];
   },
 
+  getWithDetails: async (clientId: string): Promise<RepairWithDetails[]> => {
+    const repairs = await repairService.getByClientId(clientId);
+    const repairsWithDetails = await Promise.all(repairs.map(async (repair) => {
+      const equipment = await equipmentService.getById(repair.equipmentId || '');
+      const customer = equipment ? await customerService.getById(equipment.customerId) : null;
+      
+      // Solo incluir reparaciones que tengan equipment y customer válidos
+      if (equipment && customer) {
+        return {
+          ...repair,
+          equipment,
+          customer
+        };
+      }
+      return null;
+    }));
+    
+    // Filtrar null values
+    return repairsWithDetails.filter(repair => repair !== null) as RepairWithDetails[];
+  },
+
   getByStatus: async (status: string, clientId: string): Promise<Repair[]> => {
     const q = query(
       collection(db, 'repairs'), 
       where('status', '==', status),
+      where('clientId', '==', clientId),
+      orderBy('createdAt', 'desc')
+    );
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      entryDate: doc.data().entryDate.toDate(),
+      expectedCompletionDate: doc.data().expectedCompletionDate?.toDate(),
+      completionDate: doc.data().completionDate?.toDate(),
+      createdAt: doc.data().createdAt.toDate(),
+      updatedAt: doc.data().updatedAt.toDate()
+    })) as Repair[];
+  },
+
+  getByEquipmentId: async (equipmentId: string, clientId: string): Promise<Repair[]> => {
+    const q = query(
+      collection(db, 'repairs'),
+      where('equipmentId', '==', equipmentId),
       where('clientId', '==', clientId),
       orderBy('createdAt', 'desc')
     );

@@ -2,6 +2,7 @@
 
 export const colors = {
   primary: '#2563EB',      // Blue
+  primaryLight: '#DBEAFE', // Light Blue
   secondary: '#64748B',    // Slate
   accent: '#10B981',       // Emerald
   warning: '#F59E0B',      // Amber

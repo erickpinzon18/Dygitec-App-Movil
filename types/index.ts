@@ -36,10 +36,25 @@ export interface Computer {
   createdAt: Date;
 }
 
+// Nuevo tipo para equipos independientes (Computer evolucionado)
+export interface Equipment {
+  id: string;
+  clientId: string;
+  customerId: string;
+  brand: string;
+  model: string;
+  year?: number;
+  serialNumber?: string;
+  description?: string;
+  registerBy: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface Repair {
   id: string;
   clientId: string;
-  computerId: string;
+  equipmentId: string; // Cambiado de computerId a equipmentId
   customerId: string;
   title: string;
   description: string;
@@ -95,5 +110,22 @@ export enum Priority {
 
 export interface RepairWithDetails extends Repair {
   customer: Customer;
-  computer: Computer;
+  equipment: Equipment; // Cambiado de computer a equipment
+}
+
+export interface EquipmentWithDetails extends Equipment {
+  customer: Customer;
+  repairs: Repair[];
+  repairCount: number;
+  activeRepairsCount: number;
+  lastRepairDate?: Date;
+}
+
+export interface CustomerWithStats extends Customer {
+  equipmentCount: number;
+  repairCount: number;
+  totalEquipments: number;
+  totalRepairs: number;
+  activeRepairs: number;
+  lastRepairDate?: Date;
 }

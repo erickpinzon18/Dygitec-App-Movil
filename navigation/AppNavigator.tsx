@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { useAuth } from '../contexts/AuthContext';
 import { LoadingSpinner } from '../components/LoadingSpinner';
-import { RootStackParamList, RepairsStackParamList, PartsStackParamList, SettingsStackParamList, TabParamList } from '../types/navigation';
+import { RootStackParamList, RepairsStackParamList, PartsStackParamList, CustomersStackParamList, EquipmentsStackParamList, SettingsStackParamList, TabParamList } from '../types/navigation';
 
 // Auth Screens
 import { LoginScreen } from '../screens/LoginScreen';
@@ -19,6 +19,13 @@ import { RepairDetailScreen } from '../screens/RepairDetailScreen';
 import { PartsScreen } from '../screens/PartsScreen';
 import { NewPartScreen } from '../screens/NewPartScreen';
 import { PartDetailScreen } from '../screens/PartDetailScreen';
+import { CustomersScreen } from '../screens/CustomersScreen';
+import { NewCustomerForm } from '../screens/NewCustomerForm';
+import { CustomerDetailScreen } from '../screens/CustomerDetailScreen';
+import { EquipmentsScreen } from '../screens/EquipmentsScreen';
+import { NewEquipmentForm } from '../screens/NewEquipmentForm';
+import { EditEquipmentForm } from '../screens/EditEquipmentForm';
+import { EquipmentDetailScreen } from '../screens/EquipmentDetailScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { BarcodeDisplayScreen } from '../screens/BarcodeDisplayScreen';
 import { QRScannerScreen } from '../screens/QRScannerScreen';
@@ -29,6 +36,8 @@ const AuthStack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<TabParamList>();
 const RepairsStack = createNativeStackNavigator<RepairsStackParamList>();
 const PartsStack = createNativeStackNavigator<PartsStackParamList>();
+const CustomersStack = createNativeStackNavigator<CustomersStackParamList>();
+const EquipmentsStack = createNativeStackNavigator<EquipmentsStackParamList>();
 const SettingsStack = createNativeStackNavigator<SettingsStackParamList>();
 
 const RepairsNavigator = () => (
@@ -114,6 +123,73 @@ const SettingsNavigator = () => (
   </SettingsStack.Navigator>
 );
 
+const CustomersNavigator = () => (
+  <CustomersStack.Navigator
+    screenOptions={{
+      headerStyle: {
+        backgroundColor: colors.background,
+      },
+      headerTintColor: colors.text,
+      headerTitleStyle: {
+        fontWeight: '600',
+        fontSize: 18,
+      },
+    }}
+  >
+    <CustomersStack.Screen
+      name="CustomersList"
+      component={CustomersScreen}
+      options={{ title: 'Clientes' }}
+    />
+    <CustomersStack.Screen
+      name="NewCustomerForm"
+      component={NewCustomerForm}
+      options={{ title: 'Nuevo Cliente' }}
+    />
+    <CustomersStack.Screen
+      name="CustomerDetail"
+      component={CustomerDetailScreen}
+      options={{ title: 'Detalle del Cliente' }}
+    />
+  </CustomersStack.Navigator>
+);
+
+const EquipmentsNavigator = () => (
+  <EquipmentsStack.Navigator
+    screenOptions={{
+      headerStyle: {
+        backgroundColor: colors.background,
+      },
+      headerTintColor: colors.text,
+      headerTitleStyle: {
+        fontWeight: '600',
+        fontSize: 18,
+      },
+    }}
+  >
+    <EquipmentsStack.Screen
+      name="EquipmentsList"
+      component={EquipmentsScreen}
+      options={{ title: 'Equipos' }}
+    />
+    <EquipmentsStack.Screen
+      name="NewEquipmentForm"
+      component={NewEquipmentForm}
+      options={{ title: 'Nuevo Equipo' }}
+    />
+    <EquipmentsStack.Screen
+      name="EditEquipmentForm"
+      component={EditEquipmentForm}
+      options={{ title: 'Editar Equipo' }}
+    />
+    <EquipmentsStack.Screen
+      name="EquipmentDetail"
+      component={EquipmentDetailScreen}
+      options={{ title: 'Detalle del Equipo' }}
+    />
+  </EquipmentsStack.Navigator>
+);
+
 const TabNavigator = () => (
   <Tab.Navigator
     screenOptions={({ route }) => ({
@@ -124,6 +200,10 @@ const TabNavigator = () => (
           iconName = focused ? 'construct' : 'construct-outline';
         } else if (route.name === 'Parts') {
           iconName = focused ? 'hardware-chip' : 'hardware-chip-outline';
+        } else if (route.name === 'Customers') {
+          iconName = focused ? 'people' : 'people-outline';
+        } else if (route.name === 'Equipments') {
+          iconName = focused ? 'desktop' : 'desktop-outline';
         } else if (route.name === 'QR') {
           iconName = focused ? 'qr-code' : 'qr-code-outline';
         } else if (route.name === 'Settings') {
@@ -150,6 +230,16 @@ const TabNavigator = () => (
       name="Parts"
       component={PartsNavigator}
       options={{ title: 'Piezas' }}
+    />
+    <Tab.Screen
+      name="Customers"
+      component={CustomersNavigator}
+      options={{ title: 'Clientes' }}
+    />
+    <Tab.Screen
+      name="Equipments"
+      component={EquipmentsNavigator}
+      options={{ title: 'Equipos' }}
     />
     <Tab.Screen
       name="QR"

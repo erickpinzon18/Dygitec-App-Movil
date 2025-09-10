@@ -13,7 +13,7 @@ import { Camera, CameraView } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { CompositeScreenProps } from '@react-navigation/native';
-import { repairService, partService } from '../services/firebase';
+import { repairService, partService, equipmentService } from '../services/firebase';
 import { RootStackParamList, TabParamList } from '../types/navigation';
 import { colors, typography, spacing } from '../constants/theme';
 import { useAuth } from '../contexts/AuthContext';
@@ -117,10 +117,40 @@ export const QRScannerScreen: React.FC<QRScannerScreenProps> = ({ navigation }) 
             [{ text: 'Escanear Otro', onPress: () => resetScanner() }]
           );
         }
+      } else if (qrType === 'equipment') {
+        // Verificar que el equipo existe y pertenece al cliente
+        const equipment = await equipmentService.getById(itemId);
+        if (equipment && equipment.clientId === client?.id) {
+          Alert.alert(
+            'Equipo Encontrado',
+            `¿Abrir detalles del equipo: ${equipment.brand} ${equipment.model}?`,
+            [
+              { text: 'Cancelar', onPress: () => resetScanner() },
+              {
+                text: 'Abrir',
+                onPress: () => {
+                  navigation.navigate('Equipments');
+                }
+              }
+            ]
+          );
+        } else if (equipment && equipment.clientId !== client?.id) {
+          Alert.alert(
+            'Equipo No Permitido',
+            'Este equipo no pertenece a su empresa.',
+            [{ text: 'Escanear Otro', onPress: () => resetScanner() }]
+          );
+        } else {
+          Alert.alert(
+            'Equipo No Encontrado',
+            'No se encontró un equipo con este código.',
+            [{ text: 'Escanear Otro', onPress: () => resetScanner() }]
+          );
+        }
       } else {
         Alert.alert(
           'Tipo No Reconocido',
-          'Este código QR no corresponde a una reparación o pieza válida.',
+          'Este código QR no corresponde a una reparación, pieza o equipo válido.',
           [{ text: 'Escanear Otro', onPress: () => resetScanner() }]
         );
       }

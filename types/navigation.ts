@@ -1,6 +1,6 @@
 // Navigation types for the Dygitec app
 
-import { RepairWithDetails, Part } from './index';
+import { RepairWithDetails, Part, Equipment, Customer, EquipmentWithDetails, CustomerWithStats } from './index';
 
 export type RootStackParamList = {
   // Auth Stack
@@ -13,6 +13,8 @@ export type RootStackParamList = {
   // Main App Tabs
   Repairs: undefined;
   Parts: undefined;
+  Customers: undefined;
+  Equipments: undefined;
   Settings: undefined;
   
   // QR Scanner
@@ -21,7 +23,7 @@ export type RootStackParamList = {
   // Barcode Display
   BarcodeDisplay: {
     id: string;
-    type: 'repair' | 'part';
+    type: 'repair' | 'part' | 'equipment';
     title: string;
     subtitle?: string;
   };
@@ -29,7 +31,7 @@ export type RootStackParamList = {
 
 export type RepairsStackParamList = {
   RepairsList: undefined;
-  NewRepair: undefined;
+  NewRepair: { equipmentId?: string };
   RepairDetail: {
     repair: RepairWithDetails;
   };
@@ -43,6 +45,35 @@ export type PartsStackParamList = {
   };
 };
 
+export type CustomersStackParamList = {
+  CustomersList: undefined;
+  NewCustomerForm: undefined;
+  CustomerDetail: {
+    customer: CustomerWithStats;
+  };
+  CustomerEquipments: {
+    customerId: string;
+    customerName: string;
+  };
+};
+
+export type EquipmentsStackParamList = {
+  EquipmentsList: undefined;
+  NewEquipmentForm: {
+    preselectedCustomer?: Customer;
+  };
+  EditEquipmentForm: {
+    equipment: EquipmentWithDetails;
+  };
+  EquipmentDetail: {
+    equipment: EquipmentWithDetails;
+  };
+  EquipmentRepairs: {
+    equipmentId: string;
+    equipmentInfo: string;
+  };
+};
+
 export type SettingsStackParamList = {
   SettingsList: undefined;
 };
@@ -50,6 +81,8 @@ export type SettingsStackParamList = {
 export type TabParamList = {
   Repairs: undefined;
   Parts: undefined;
+  Customers: undefined;
+  Equipments: undefined;
   QR: undefined;
   Settings: undefined;
 };

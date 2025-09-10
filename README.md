@@ -2,35 +2,48 @@
 
 ## 📱 Descripción
 
-Dygitec es una aplicación móvil desarrollada con React Native y Expo para la gestión integral de un negocio de reparación de computadoras. La app permite administrar reparaciones, inventario de piezas, clientes y generar códigos QR para un seguimiento eficiente.
+Dygitec es una aplicación móvil desarrollada con React Native y Expo para la gestión integral de un negocio de reparación de computadoras. La app permite administrar reparaciones, inventario de piezas, clientes, equipos y generar códigos QR para un seguimiento eficiente.
 
 ## ✨ Características Principales
 
-### 🔧 Gestión de Reparaciones
-- **Registro completo**: Cliente, computadora, problema y estado
+### 🔧 Gestión de Reparaciones Inteligente
+- **Navegación contextual**: Crear reparaciones desde equipos con datos preseleccionados
+- **Selectores elegantes**: Modales con búsqueda en tiempo real y filtrado avanzado
 - **Estados de seguimiento**: Pendiente, En Progreso, Esperando Piezas, Completada, Entregada, Cancelada
-- **Filtrado y búsqueda**: Por estado, cliente, descripción, marca, modelo, etc.
-- **Códigos QR**: Generación automática para cada reparación
+- **Filtrado y búsqueda**: Por estado, cliente, descripción, marca, modelo
+- **Códigos QR**: Generación automática para cada reparación con visualización mejorada
 
-### 📦 Inventario de Piezas
+### � Gestión de Equipos Avanzada
+- **Registro inteligente**: Cliente preseleccionado al crear desde contexto de reparación
+- **Detalles completos**: Marca, modelo, año, número de serie, descripción
+- **Asociación automática**: Vinculación directa con clientes
+- **Navegación fluida**: Integración perfecta con el flujo de reparaciones
+
+### 👥 Gestión de Clientes Mejorada
+- **Información completa**: Nombre, teléfono, email
+- **Historial detallado**: Todas las reparaciones y equipos asociados
+- **Selección elegante**: Modal con búsqueda y filtrado en tiempo real
+- **Indicadores visuales**: Estados de selección previa y búsqueda dinámica
+
+### �📦 Inventario de Piezas
 - **Gestión completa**: Nombre, marca, modelo, categoría, compatibilidad
 - **Control de stock**: Cantidad, ubicación, costo
 - **Filtrado avanzado**: Por categoría, stock disponible, piezas vendidas
 - **Códigos QR**: Para cada pieza con etiquetas imprimibles
 
-### 👥 Gestión de Clientes
-- **Información completa**: Nombre, teléfono, email
-- **Historial**: Todas las reparaciones asociadas
+### 🎨 Experiencia de Usuario Mejorada
+- **Modales transparentes**: Diseño moderno con overlay elegante
+- **Búsqueda en tiempo real**: Filtrado instantáneo mientras escribes
+- **Estados de carga**: Indicadores visuales de actualizaciones
+- **Navegación intuitiva**: Headers consistentes con botones de regreso claros
+- **Preselección inteligente**: Datos automáticos basados en contexto
 
-### 💻 Gestión de Computadoras
-- **Detalles técnicos**: Marca, modelo, número de serie
-- **Asociación**: Vinculación con clientes y reparaciones
-
-### 📱 Funcionalidades Avanzadas
-- **Lector QR integrado**: Escaneo desde cámara o galería
-- **Navegación inteligente**: Desde QR a detalles automáticamente
-- **Exportación de QR**: Guardado en galería para impresión
-- **Interfaz intuitiva**: Diseño moderno y fácil de usar
+### 📱 Funcionalidades Técnicas Avanzadas
+- **Auto-actualización**: Listas que se refrescan automáticamente al regresar
+- **Gestión de estado**: Estados de preselección que se adaptan dinámicamente
+- **Navegación cruzada**: Flujo fluido entre diferentes secciones
+- **Validación inteligente**: Formularios que se adaptan al contexto
+- **Interfaz responsiva**: Diseño adaptable y consistente
 
 ## 🛠️ Tecnologías Utilizadas
 
@@ -87,15 +100,48 @@ Dygitec es una aplicación móvil desarrollada con React Native y Expo para la g
 1. **Registro/Login**: Crear cuenta o iniciar sesión
 2. **Navegación**: Usar las pestañas inferiores para navegar
 
-### Gestión de Reparaciones
-1. **Nueva Reparación**: Botón "+" en la pestaña Reparaciones
-2. **Seguimiento**: Cambiar estados desde los detalles
-3. **QR**: Generar código QR para cada reparación
+### Gestión de Reparaciones Inteligente
+1. **Nueva Reparación**: 
+   - Desde pestañas Reparaciones: Selección manual de cliente y equipo
+   - Desde Equipos: Cliente y equipo preseleccionados automáticamente
+2. **Selectores Elegantes**: 
+   - Búsqueda en tiempo real con filtrado instantáneo
+   - Modales transparentes con diseño moderno
+   - Indicadores de estado de carga y actualización
+3. **Seguimiento**: Cambiar estados desde los detalles
+4. **QR**: Generar código QR para cada reparación
+
+### Gestión de Equipos Mejorada
+1. **Agregar Equipo**: 
+   - Desde lista de equipos: Selección manual de cliente
+   - Desde reparaciones: Cliente preseleccionado automáticamente
+   - Desde cliente específico: Cliente preseleccionado
+2. **Indicadores**: Mensaje "(preseleccionado)" que desaparece al cambiar
+3. **Auto-actualización**: Lista se actualiza al regresar de crear equipo
+
+### Gestión de Clientes
+1. **Agregar Cliente**: Formulario con validación inteligente
+2. **Búsqueda**: Filtrado en tiempo real por nombre, teléfono o email
+3. **Selección**: Modal elegante con estados visuales claros
 
 ### Inventario de Piezas
 1. **Agregar Pieza**: Botón "+" en la pestaña Piezas
 2. **Filtrar**: Usar categorías y búsqueda
 3. **Vender**: Marcar pieza como vendida (stock = 0)
+
+### Flujos de Trabajo Optimizados
+
+#### Flujo 1: Reparación desde Cliente
+1. Buscar cliente → Seleccionar equipo → Crear reparación
+2. Lista de equipos se actualiza automáticamente
+
+#### Flujo 2: Reparación desde Equipo
+1. Seleccionar equipo → Datos preseleccionados → Completar información
+
+#### Flujo 3: Nuevo Equipo en Contexto
+1. Creando reparación → Falta equipo → "Registrar Nuevo Equipo"
+2. Cliente ya preseleccionado → Solo completar datos del equipo
+3. Regresar → Equipo disponible en lista actualizada
 
 ### Escaneo QR
 1. **Cámara**: Usar la pestaña QR para escanear en tiempo real
@@ -119,6 +165,10 @@ Dygitec/
 ├── screens/           # Pantallas de la aplicación
 │   ├── LoginScreen.tsx
 │   ├── RepairsScreen.tsx
+│   ├── NewRepairScreen.tsx    # ⭐ Con navegación inteligente
+│   ├── EquipmentsScreen.tsx   # ⭐ Lista con auto-actualización
+│   ├── NewEquipmentForm.tsx   # ⭐ Con preselección de cliente
+│   ├── CustomersScreen.tsx    # ⭐ Con selectores elegantes
 │   ├── PartsScreen.tsx
 │   ├── QRScannerScreen.tsx
 │   └── ...
@@ -126,17 +176,35 @@ Dygitec/
 │   └── firebase.ts
 ├── types/            # Tipos TypeScript
 │   ├── index.ts
-│   └── navigation.ts
+│   └── navigation.ts    # ⭐ Con parámetros de navegación mejorados
 └── App.tsx           # Componente principal
 ```
 
-## 🎨 Diseño y UX
+## 🎨 Diseño y UX Mejorado
 
-- **Tema oscuro/claro**: Adaptable según preferencias del sistema
+### Componentes Inteligentes
+- **Modales Transparentes**: Overlay con bordes redondeados y animaciones suaves
+- **Búsqueda en Tiempo Real**: Filtrado instantáneo con indicadores de resultado
+- **Estados de Carga**: Spinners y mensajes contextuales ("Actualizando lista...")
+- **Selección Visual**: Estados claros de selección e interacción
+
+### Navegación Inteligente
+- **Preselección Contextual**: Datos automáticos según el origen de navegación
+- **Headers Consistentes**: Botones de regreso uniformes en toda la app
+- **Auto-actualización**: Listas que se refrescan al regresar de crear/editar
+- **Indicadores Dinámicos**: Mensajes que aparecen y desaparecen según el contexto
+
+### Experiencia de Usuario
+- **Flujos Optimizados**: Menos pasos para completar tareas comunes
+- **Feedback Visual**: Confirmaciones claras de acciones completadas
+- **Estados Vacíos**: Mensajes útiles cuando no hay datos
+- **Validación Inteligente**: Formularios que se adaptan al contexto
+
+### Características de Accesibilidad
 - **Iconografía**: Ionicons para consistencia visual
-- **Navegación**: Tab navigation con stack navigation anidado
-- **Feedback**: Loading states y mensajes informativos
-- **Accesibilidad**: Cumple estándares de accesibilidad móvil
+- **Contraste**: Colores que cumplen estándares WCAG
+- **Tamaños Táctiles**: Botones y controles de tamaño apropiado
+- **Feedback Háptico**: Confirmaciones táctiles en acciones importantes
 
 ## 🔐 Seguridad
 
@@ -224,7 +292,33 @@ expo build:ios
 
 ## 📝 Changelog
 
-### v1.0.0 (2025-09-09)
+### v2.0.0 (2025-09-10) - ⭐ Major UX Update
+#### 🚀 Nuevas Funcionalidades
+- ✅ **Navegación Inteligente**: Crear reparaciones desde equipos con datos preseleccionados
+- ✅ **Selectores Elegantes**: Modales transparentes con búsqueda en tiempo real
+- ✅ **Auto-actualización**: Listas que se refrescan automáticamente al regresar
+- ✅ **Preselección de Cliente**: En NewEquipmentForm según contexto de navegación
+- ✅ **Indicadores Dinámicos**: Mensajes "(preseleccionado)" que desaparecen al cambiar
+- ✅ **Estados de Carga**: Feedback visual durante actualizaciones de datos
+
+#### 🎨 Mejoras de Diseño
+- ✅ **Modales Transparentes**: Overlay elegante con animaciones suaves
+- ✅ **Búsqueda Instantánea**: Filtrado en tiempo real mientras escribes
+- ✅ **Headers Consistentes**: Navegación uniforme en toda la aplicación
+- ✅ **Estados Vacíos Mejorados**: Mensajes contextuales y acciones sugeridas
+
+#### 🔧 Mejoras Técnicas
+- ✅ **Tipos de Navegación**: Parámetros mejorados para preselección de datos
+- ✅ **Gestión de Estado**: Estados de preselección que se adaptan dinámicamente
+- ✅ **Optimización de Flujos**: Menos pasos para completar tareas comunes
+- ✅ **Validación Inteligente**: Formularios que se adaptan al contexto
+
+#### 🚀 Flujos de Trabajo Optimizados
+- ✅ **Flujo Reparación desde Equipo**: Datos preseleccionados automáticamente
+- ✅ **Flujo Nuevo Equipo en Contexto**: Cliente preseleccionado al crear desde reparación
+- ✅ **Flujo Cliente → Equipo → Reparación**: Navegación fluida con datos conservados
+
+### v1.0.0 (2025-09-09) - Initial Release
 - ✅ Sistema completo de gestión de reparaciones
 - ✅ Inventario de piezas con filtrado avanzado
 - ✅ Generación y lectura de códigos QR
@@ -496,13 +590,28 @@ La aplicación utiliza un sistema de diseño consistente definido en `constants/
 
 ## 🚀 Próximas Características
 
-- [ ] Notificaciones push para recordatorios
-- [ ] Generación de reportes PDF
-- [ ] Backup y restauración de datos
-- [ ] Búsqueda avanzada
-- [ ] Dashboard con métricas
-- [ ] Gestión de proveedores
-- [ ] Historial de precios de piezas
+### Funcionalidades Planificadas
+- [ ] **Notificaciones Push**: Recordatorios de reparaciones pendientes
+- [ ] **Generación de Reportes**: PDFs con estadísticas y resúmenes
+- [ ] **Backup Automático**: Sincronización y restauración de datos
+- [ ] **Dashboard Avanzado**: Métricas de rendimiento y estadísticas
+- [ ] **Gestión de Proveedores**: Control de compras y inventario
+- [ ] **Historial de Precios**: Seguimiento de costos de piezas
+
+### Mejoras de UX Planificadas  
+- [ ] **Modo Offline**: Funcionamiento sin conexión con sincronización posterior
+- [ ] **Temas Personalizables**: Más opciones de personalización visual
+- [ ] **Shortcuts**: Accesos rápidos a funciones frecuentes
+- [ ] **Búsqueda Global**: Buscar en todas las secciones desde un lugar
+- [ ] **Widgets**: Información rápida en pantalla de inicio
+- [ ] **Gestos**: Acciones rápidas con swipe y long press
+
+### Integraciones Futuras
+- [ ] **Exportación Excel**: Reportes en formato Excel
+- [ ] **WhatsApp Business**: Notificaciones directas a clientes
+- [ ] **Impresoras Térmicas**: Impresión directa de etiquetas QR
+- [ ] **API REST**: Integración con sistemas externos
+- [ ] **Analytics**: Métricas detalladas de uso y rendimiento
 
 ## 📄 Licencia
 
