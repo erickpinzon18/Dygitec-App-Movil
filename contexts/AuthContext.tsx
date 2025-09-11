@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User as FirebaseUser, onAuthStateChanged } from 'firebase/auth';
+import { User as FirebaseUser, onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
+import { Alert } from 'react-native';
 import { auth, db } from '../config/firebase';
 import { Client, User } from '../types';
 
@@ -38,6 +39,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const userDoc = await getDoc(doc(db, 'users', firebaseUserId));
       if (userDoc.exists()) {
         const userData = { id: userDoc.id, ...userDoc.data() } as User;
+        
+        // Verificar si el usuario está habilitado (campo enabled debe ser true o undefined)
+        if (userData.enabled === false) {
+          Alert.alert(
+            'Cuenta Deshabilitada',
+            'Tu cuenta ha sido deshabilitada por el administrador. Contacta al administrador para más información.',
+            [
+              {
+                text: 'OK',
+                onPress: async () => {
+                  await signOut(auth);
+                }
+              }
+            ]
+          );
+          return;
+        }
+        
         setUser(userData);
 
         // Obtener información del cliente

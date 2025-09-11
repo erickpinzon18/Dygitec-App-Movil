@@ -76,6 +76,8 @@ export type EquipmentsStackParamList = {
 
 export type SettingsStackParamList = {
   SettingsList: undefined;
+  UserManagement: undefined;
+  NewUser: undefined;
 };
 
 export type TabParamList = {

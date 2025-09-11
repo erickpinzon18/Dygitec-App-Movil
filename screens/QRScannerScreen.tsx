@@ -13,7 +13,7 @@ import { Camera, CameraView } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { CompositeScreenProps, useFocusEffect } from '@react-navigation/native';
-import { repairService, partService, equipmentService } from '../services/firebase';
+import { repairService, partService, equipmentService, customerService } from '../services/firebase';
 import { RootStackParamList, TabParamList } from '../types/navigation';
 import { colors, typography, spacing } from '../constants/theme';
 import { useAuth } from '../contexts/AuthContext';
@@ -76,6 +76,19 @@ export const QRScannerScreen: React.FC<QRScannerScreenProps> = ({ navigation }) 
         // Verificar que la reparación existe y pertenece al cliente
         const repair = await repairService.getById(itemId);
         if (repair && repair.clientId === client?.id) {
+          // Obtener también la información del customer y equipment
+          const [customer, equipment] = await Promise.all([
+            customerService.getById(repair.customerId),
+            equipmentService.getById(repair.equipmentId)
+          ]);
+          
+          // Crear la reparación con toda la información completa
+          const repairWithDetails = {
+            ...repair,
+            customer: customer,
+            equipment: equipment
+          };
+
           Alert.alert(
             'Reparación Encontrada',
             `¿Abrir detalles de la reparación: ${repair.description}?`,
@@ -92,7 +105,7 @@ export const QRScannerScreen: React.FC<QRScannerScreenProps> = ({ navigation }) 
                     // @ts-ignore - Navegación directa al stack de Repairs
                     navigation.navigate('Repairs', {
                       screen: 'RepairDetail',
-                      params: { repair }
+                      params: { repair: repairWithDetails }
                     });
                   }, 50);
                 }
@@ -156,6 +169,15 @@ export const QRScannerScreen: React.FC<QRScannerScreenProps> = ({ navigation }) 
         // Verificar que el equipo existe y pertenece al cliente
         const equipment = await equipmentService.getById(itemId);
         if (equipment && equipment.clientId === client?.id) {
+          // Obtener también la información del customer
+          const customer = await customerService.getById(equipment.customerId);
+          
+          // Crear el equipo con la información del customer
+          const equipmentWithCustomer = {
+            ...equipment,
+            customer: customer
+          };
+
           Alert.alert(
             'Equipo Encontrado',
             `¿Abrir detalles del equipo: ${equipment.brand} ${equipment.model}?`,
@@ -172,7 +194,7 @@ export const QRScannerScreen: React.FC<QRScannerScreenProps> = ({ navigation }) 
                     // @ts-ignore - Navegación directa al stack de Equipments
                     navigation.navigate('Equipments', {
                       screen: 'EquipmentDetail',
-                      params: { equipment }
+                      params: { equipment: equipmentWithCustomer }
                     });
                   }, 50);
                 }

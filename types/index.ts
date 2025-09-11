@@ -11,6 +11,7 @@ export interface User {
   clientId: string;
   name: string;
   type: UserType;
+  enabled: boolean;
 }
 
 export interface Customer {
@@ -89,8 +90,23 @@ export interface Part {
 
 export enum UserType {
   ADMIN = 'admin',
+  WORKER = 'worker',
   USER = 'user'
 }
+
+// Helper function to get user type display text
+export const getUserTypeDisplayText = (type: UserType): string => {
+  switch (type) {
+    case UserType.ADMIN:
+      return 'Administrador';
+    case UserType.WORKER:
+      return 'Trabajador';
+    case UserType.USER:
+      return 'Usuario Básico';
+    default:
+      return type;
+  }
+};
 
 export enum RepairStatus {
   PENDING = 'pending',

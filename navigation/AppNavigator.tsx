@@ -27,6 +27,8 @@ import { NewEquipmentForm } from '../screens/NewEquipmentForm';
 import { EditEquipmentForm } from '../screens/EditEquipmentForm';
 import { EquipmentDetailScreen } from '../screens/EquipmentDetailScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
+import { UserManagementScreen } from '../screens/UserManagementScreen';
+import { NewUserScreen } from '../screens/NewUserScreen';
 import { BarcodeDisplayScreen } from '../screens/BarcodeDisplayScreen';
 import { QRScannerScreen } from '../screens/QRScannerScreen';
 
@@ -119,6 +121,16 @@ const SettingsNavigator = () => (
       name="SettingsList"
       component={SettingsScreen}
       options={{ title: 'Configuración' }}
+    />
+    <SettingsStack.Screen
+      name="UserManagement"
+      component={UserManagementScreen}
+      options={{ headerShown: false }}
+    />
+    <SettingsStack.Screen
+      name="NewUser"
+      component={NewUserScreen}
+      options={{ headerShown: false }}
     />
   </SettingsStack.Navigator>
 );

@@ -10,6 +10,7 @@ import {
   collection, 
   doc, 
   addDoc, 
+  setDoc,
   updateDoc, 
   deleteDoc, 
   getDoc, 
@@ -28,15 +29,45 @@ export const authService = {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
     
-    // Create user document with clientId
-    await addDoc(collection(db, 'users'), {
-      id: user.uid,
+    // Create user document using the Auth UID as document ID
+    await setDoc(doc(db, 'users', user.uid), {
       clientId,
       name,
-      type: userType
+      type: userType,
+      enabled: true
     });
     
     return user;
+  },
+
+  // Método para que admins creen usuarios sin afectar su sesión
+  createUserAsAdmin: async (email: string, password: string, name: string, clientId: string, userType: string = 'worker') => {
+    // Crear usuario usando Firebase Admin (esto requeriría configuración del lado del servidor)
+    // Por ahora usaremos el método normal y manejaremos la re-autenticación
+    const currentUser = auth.currentUser;
+    
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const newUser = userCredential.user;
+      
+      // Create user document using the Auth UID as document ID
+      await setDoc(doc(db, 'users', newUser.uid), {
+        clientId,
+        name,
+        type: userType,
+        enabled: true
+      });
+      
+      // Re-autenticar al usuario actual
+      if (currentUser) {
+        // Forzar recarga del usuario actual
+        await currentUser.reload();
+      }
+      
+      return newUser.uid;
+    } catch (error) {
+      throw error;
+    }
   },
 
   signIn: async (email: string, password: string) => {
@@ -95,6 +126,26 @@ export const userService = {
       id: doc.id,
       ...doc.data()
     })) as User[];
+  },
+
+  create: async (userData: Omit<User, 'id'>) => {
+    const docRef = await addDoc(collection(db, 'users'), userData);
+    return docRef.id;
+  },
+
+  update: async (id: string, data: Partial<User>) => {
+    const userDocRef = doc(db, 'users', id);
+    const userDoc = await getDoc(userDocRef);
+    
+    if (!userDoc.exists()) {
+      throw new Error(`Usuario no encontrado en la base de datos. ID: ${id}`);
+    }
+    
+    await updateDoc(userDocRef, data);
+  },
+
+  delete: async (id: string) => {
+    await deleteDoc(doc(db, 'users', id));
   }
 };
 

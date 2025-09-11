@@ -11,6 +11,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { authService } from '../services/firebase';
+import { getUserTypeDisplayText } from '../types';
 import { SettingsStackParamList } from '../types/navigation';
 import { colors, typography, spacing, shadows } from '../constants/theme';
 import { useAuth } from '../contexts/AuthContext';
@@ -119,10 +120,20 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
             subtitle={user?.name || "Cargando..."}
             onPress={() => Alert.alert(
               'Información del Usuario',
-              `Nombre: ${user?.name || 'No disponible'}\nTipo: ${user?.type === 'admin' ? 'Administrador' : 'Usuario'}\nEmpresa: ${client?.name || 'No disponible'}`,
+              `Nombre: ${user?.name || 'No disponible'}\nTipo: ${user?.type ? getUserTypeDisplayText(user.type) : 'No disponible'}\nEmpresa: ${client?.name || 'No disponible'}`,
               [{ text: 'OK' }]
             )}
           />
+
+          {/* Solo mostrar administración de usuarios para admins */}
+          {user?.type === 'admin' && (
+            <SettingsItem
+              icon="people-outline"
+              title="Administrar Usuarios"
+              subtitle="Gestionar trabajadores de la empresa"
+              onPress={() => navigation.navigate('UserManagement')}
+            />
+          )}
           
           {/* <SettingsItem
             icon="notifications-outline"
@@ -163,9 +174,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
           <SettingsItem
             icon="information-circle-outline"
             title="Acerca de Dygitec"
-            subtitle="Versión 1.0.0"
+            subtitle="Versión 1.3.0"
             onPress={() => Alert.alert(
-              'Dygitec v1.0.0',
+              'Dygitec v1.3.0',
               'Aplicación de gestión de reparaciones de computadoras.\n\nDesarrollado para facilitar el control de reparaciones, inventario de piezas y seguimiento de clientes.\n\n- github.com/erickpinzon18',
               [{ text: 'OK' }]
             )}
