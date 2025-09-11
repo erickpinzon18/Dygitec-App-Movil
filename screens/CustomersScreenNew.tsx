@@ -95,14 +95,14 @@ export const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) 
           )}
         </View>
         
-        <View style={styles.customerStats}>
-          <View style={styles.customerStatItem}>
-            <Text style={styles.customerStatNumber}>{item.equipmentCount}</Text>
-            <Text style={styles.customerStatLabel}>Equipos</Text>
+        <View style={styles.statsContainer}>
+          <View style={styles.statItem}>
+            <Text style={styles.statNumber}>{item.equipmentCount}</Text>
+            <Text style={styles.statLabel}>Equipos</Text>
           </View>
-          <View style={styles.customerStatItem}>
-            <Text style={styles.customerStatNumber}>{item.repairCount}</Text>
-            <Text style={styles.customerStatLabel}>Reparaciones</Text>
+          <View style={styles.statItem}>
+            <Text style={styles.statNumber}>{item.repairCount}</Text>
+            <Text style={styles.statLabel}>Reparaciones</Text>
           </View>
         </View>
       </View>
@@ -126,19 +126,17 @@ export const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) 
     </View>
   );
 
-  // Componente de loading para el área de la lista
-  const ListLoadingView = () => (
-    <View style={styles.listLoadingContainer}>
-      <LoadingSpinner size="large" />
-      <Text style={styles.loadingText}>Cargando clientes...</Text>
-    </View>
-  );
+  if (loading) {
+    return <LoadingSpinner />;
+  }
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Clientes</Text>
-        
+      </View>
+
+      <View style={styles.searchContainer}>
         <View style={styles.searchInputContainer}>
           <Ionicons name="search" size={20} color={colors.textSecondary} />
           <TextInput
@@ -154,46 +152,42 @@ export const CustomersScreen: React.FC<CustomersScreenProps> = ({ navigation }) 
             </TouchableOpacity>
           )}
         </View>
+      </View>
 
-        {/* Stats Container */}
-        <View style={styles.statsContainer}>
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>{customers.length}</Text>
-            <Text style={styles.statLabel}>Total Clientes</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>
-              {customers.reduce((total, customer) => total + customer.equipmentCount, 0)}
-            </Text>
-            <Text style={styles.statLabel}>Total Equipos</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>
-              {customers.reduce((total, customer) => total + customer.repairCount, 0)}
-            </Text>
-            <Text style={styles.statLabel}>Total Reparaciones</Text>
-          </View>
+      {/* Stats Container */}
+      <View style={styles.statsContainer}>
+        <View style={styles.statItem}>
+          <Text style={styles.statNumber}>{customers.length}</Text>
+          <Text style={styles.statLabel}>Total Clientes</Text>
+        </View>
+        <View style={styles.statDivider} />
+        <View style={styles.statItem}>
+          <Text style={styles.statNumber}>
+            {customers.reduce((total, customer) => total + customer.equipmentCount, 0)}
+          </Text>
+          <Text style={styles.statLabel}>Total Equipos</Text>
+        </View>
+        <View style={styles.statDivider} />
+        <View style={styles.statItem}>
+          <Text style={styles.statNumber}>
+            {customers.reduce((total, customer) => total + customer.repairCount, 0)}
+          </Text>
+          <Text style={styles.statLabel}>Total Reparaciones</Text>
         </View>
       </View>
 
       <View style={styles.listContainer}>
-        {loading && customers.length === 0 ? (
-          <ListLoadingView />
-        ) : (
-          <FlatList
-            data={filteredCustomers}
-            renderItem={renderCustomerItem}
-            keyExtractor={(item) => item.id}
-            style={styles.flatList}
-            refreshing={refreshing}
-            onRefresh={() => loadCustomers(true)}
-            ListEmptyComponent={!loading ? renderEmptyState : null}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={filteredCustomers.length === 0 ? styles.emptyListContainer : undefined}
-          />
-        )}
+        <FlatList
+          data={filteredCustomers}
+          renderItem={renderCustomerItem}
+          keyExtractor={(item) => item.id}
+          style={styles.flatList}
+          refreshing={refreshing}
+          onRefresh={() => loadCustomers(true)}
+          ListEmptyComponent={renderEmptyState}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={filteredCustomers.length === 0 ? styles.emptyListContainer : undefined}
+        />
       </View>
 
       {/* Floating Action Button */}
@@ -216,7 +210,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.lg,
-    paddingBottom: spacing.lg,
+    paddingBottom: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
@@ -224,7 +218,13 @@ const styles = StyleSheet.create({
     ...typography.h1,
     color: colors.text,
     fontWeight: 'bold',
-    marginBottom: spacing.md,
+  },
+  searchContainer: {
+    backgroundColor: colors.card,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   searchInputContainer: {
     flexDirection: 'row',
@@ -235,7 +235,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     borderWidth: 1,
     borderColor: colors.border,
-    marginBottom: spacing.md,
   },
   searchInput: {
     flex: 1,
@@ -248,6 +247,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primaryLight,
     borderRadius: 12,
     padding: spacing.md,
+    marginHorizontal: spacing.lg,
+    marginVertical: spacing.md,
   },
   statItem: {
     flex: 1,
@@ -271,8 +272,6 @@ const styles = StyleSheet.create({
   listContainer: {
     flex: 1,
     paddingHorizontal: spacing.lg,
-    backgroundColor: colors.surface,
-    paddingTop: spacing.lg,
   },
   flatList: {
     flex: 1,
@@ -286,7 +285,7 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     borderRadius: 12,
     marginBottom: spacing.md,
-    ...shadows.sm,
+    ...shadows.md,
   },
   customerHeader: {
     flexDirection: 'row',
@@ -335,35 +334,6 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
   },
-  customerStats: {
-    flexDirection: 'row',
-    marginLeft: spacing.md,
-  },
-  customerStatItem: {
-    alignItems: 'center',
-    marginLeft: spacing.md,
-  },
-  customerStatNumber: {
-    ...typography.h3,
-    color: colors.primary,
-    fontWeight: 'bold',
-  },
-  customerStatLabel: {
-    ...typography.caption,
-    color: colors.textSecondary,
-  },
-  listLoadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: spacing.xl,
-  },
-  loadingText: {
-    ...typography.body,
-    color: colors.textSecondary,
-    marginTop: spacing.md,
-    textAlign: 'center',
-  },
   fab: {
     position: 'absolute',
     right: spacing.lg,
@@ -375,6 +345,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     ...shadows.lg,
-    elevation: 8,
   },
 });

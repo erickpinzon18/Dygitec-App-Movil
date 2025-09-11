@@ -16,6 +16,7 @@ import { equipmentService, customerService } from '../services/firebase';
 import { EquipmentWithDetails, RepairStatus } from '../types';
 import { EquipmentsStackParamList } from '../types/navigation';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+// import { FloatingActionButton } from '../components/FloatingActionButton';
 import { colors, typography, spacing, shadows } from '../constants/theme';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -160,87 +161,83 @@ export const EquipmentsScreen: React.FC<EquipmentsScreenProps> = ({ navigation }
     </View>
   );
 
-  // Componente de loading para el área de la lista
-  const ListLoadingView = () => (
-    <View style={styles.listLoadingContainer}>
-      <LoadingSpinner size="large" />
-      <Text style={styles.loadingText}>Cargando equipos...</Text>
-    </View>
-  );
+  if (loading) {
+    return <LoadingSpinner />;
+  }
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Equipos</Text>
-        
+      {/* Search Header */}
+      <View style={styles.searchContainer}>
         <View style={styles.searchInputContainer}>
           <Ionicons name="search" size={20} color={colors.textSecondary} />
           <TextInput
             style={styles.searchInput}
             placeholder="Buscar equipos..."
+            placeholderTextColor={colors.textSecondary}
             value={searchQuery}
             onChangeText={setSearchQuery}
-            placeholderTextColor={colors.placeholder}
+            autoCorrect={false}
           />
           {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Ionicons name="close" size={20} color={colors.textSecondary} />
+            <TouchableOpacity
+              onPress={() => setSearchQuery('')}
+              style={styles.clearButton}
+            >
+              <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
             </TouchableOpacity>
           )}
         </View>
+      </View>
 
-        {/* Stats Container */}
-        <View style={styles.statsContainer}>
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>{equipments.length}</Text>
-            <Text style={styles.statLabel}>Total Equipos</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>
-              {equipments.reduce((total, equipment) => {
-                const activeRepairs = equipment.repairs.filter(repair => 
-                  repair.status === RepairStatus.PENDING || repair.status === RepairStatus.IN_PROGRESS
-                ).length;
-                return total + activeRepairs;
-              }, 0)}
-            </Text>
-            <Text style={styles.statLabel}>Reparaciones Activas</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>
-              {equipments.reduce((total, equipment) => total + equipment.repairCount, 0)}
-            </Text>
-            <Text style={styles.statLabel}>Total Reparaciones</Text>
-          </View>
+      {/* Stats Summary */}
+      <View style={styles.summaryContainer}>
+        <View style={styles.summaryItem}>
+          <Text style={styles.summaryNumber}>{equipments.length}</Text>
+          <Text style={styles.summaryLabel}>Total Equipos</Text>
+        </View>
+        <View style={styles.summaryItem}>
+          <Text style={styles.summaryNumber}>
+            {equipments.reduce((total, equipment) => {
+              const activeRepairs = equipment.repairs.filter(repair => 
+                repair.status === RepairStatus.PENDING || repair.status === RepairStatus.IN_PROGRESS
+              ).length;
+              return total + activeRepairs;
+            }, 0)}
+          </Text>
+          <Text style={styles.summaryLabel}>Reparaciones Activas</Text>
+        </View>
+        <View style={styles.summaryItem}>
+          <Text style={styles.summaryNumber}>
+            {equipments.reduce((total, equipment) => total + equipment.repairCount, 0)}
+          </Text>
+          <Text style={styles.summaryLabel}>Total Reparaciones</Text>
         </View>
       </View>
 
-      <View style={styles.listContainer}>
-        {loading && equipments.length === 0 ? (
-          <ListLoadingView />
-        ) : (
-          <FlatList
-            data={filteredEquipments}
-            renderItem={renderEquipmentItem}
-            keyExtractor={(item) => item.id}
-            style={styles.flatList}
-            refreshing={refreshing}
-            onRefresh={() => loadEquipments(true)}
-            ListEmptyComponent={!loading ? renderEmptyState : null}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={filteredEquipments.length === 0 ? styles.emptyListContainer : undefined}
-          />
-        )}
-      </View>
+      {/* Equipments List */}
+      <FlatList
+        data={filteredEquipments}
+        renderItem={renderEquipmentItem}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.listContainer}
+        refreshing={refreshing}
+        onRefresh={() => loadEquipments(true)}
+        ListEmptyComponent={renderEmptyState}
+        showsVerticalScrollIndicator={false}
+      />
 
       {/* Floating Action Button */}
+            {/* <FloatingActionButton
+        onPress={() => navigation.navigate('NewEquipment')}
+        icon="plus"
+        color="white"
+      /> */}
       <TouchableOpacity
         style={styles.fab}
         onPress={() => navigation.navigate('NewEquipmentForm', {})}
       >
-        <Ionicons name="add" size={24} color={colors.background} />
+        <Text style={styles.fabLabel}>+</Text>
       </TouchableOpacity>
     </SafeAreaView>
   );
@@ -249,21 +246,13 @@ export const EquipmentsScreen: React.FC<EquipmentsScreenProps> = ({ navigation }
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
   },
-  header: {
-    backgroundColor: colors.card,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.lg,
+  searchContainer: {
+    padding: spacing.lg,
+    backgroundColor: colors.background,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
-  },
-  headerTitle: {
-    ...typography.h1,
-    color: colors.text,
-    fontWeight: 'bold',
-    marginBottom: spacing.md,
   },
   searchInputContainer: {
     flexDirection: 'row',
@@ -274,7 +263,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     borderWidth: 1,
     borderColor: colors.border,
-    marginBottom: spacing.md,
   },
   searchInput: {
     flex: 1,
@@ -282,48 +270,39 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.text,
   },
-  statsContainer: {
-    flexDirection: 'row',
-    backgroundColor: colors.primaryLight,
-    borderRadius: 12,
-    padding: spacing.md,
+  clearButton: {
+    padding: spacing.xs,
   },
-  statItem: {
+  summaryContainer: {
+    flexDirection: 'row',
+    backgroundColor: colors.background,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  summaryItem: {
     flex: 1,
     alignItems: 'center',
   },
-  statNumber: {
-    ...typography.h1,
+  summaryNumber: {
+    ...typography.h2,
     color: colors.primary,
-    marginBottom: spacing.xs,
+    fontWeight: 'bold',
   },
-  statLabel: {
+  summaryLabel: {
     ...typography.caption,
     color: colors.textSecondary,
-    textAlign: 'center',
-  },
-  statDivider: {
-    width: 1,
-    backgroundColor: colors.border,
-    marginHorizontal: spacing.md,
+    marginTop: spacing.xs,
   },
   listContainer: {
-    flex: 1,
-    paddingHorizontal: spacing.lg,
-    backgroundColor: colors.surface,
-    paddingTop: spacing.lg,
-  },
-  flatList: {
-    flex: 1,
-  },
-  emptyListContainer: {
-    flex: 1,
-    justifyContent: 'center',
+    padding: spacing.lg,
+    paddingBottom: spacing.xl * 5, // Space for FAB
   },
   equipmentCard: {
-    backgroundColor: colors.card,
-    padding: spacing.lg,
+    backgroundColor: colors.background,
     borderRadius: 12,
+    padding: spacing.lg,
     marginBottom: spacing.md,
     ...shadows.sm,
   },
@@ -335,6 +314,7 @@ const styles = StyleSheet.create({
   },
   equipmentInfo: {
     flex: 1,
+    marginRight: spacing.md,
   },
   equipmentName: {
     ...typography.h3,
@@ -354,42 +334,50 @@ const styles = StyleSheet.create({
   serialNumber: {
     ...typography.bodySmall,
     color: colors.textSecondary,
+    fontFamily: 'monospace',
   },
   statusContainer: {
-    marginLeft: spacing.md,
+    alignItems: 'flex-end',
   },
   statusBadge: {
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
-    borderRadius: 6,
+    borderRadius: 8,
     maxWidth: 120,
   },
   statusText: {
     ...typography.caption,
-    color: colors.card,
+    color: colors.background,
     fontWeight: '600',
     textAlign: 'center',
-    fontSize: 10,
   },
   equipmentFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   },
   registeredDate: {
     ...typography.caption,
     color: colors.textSecondary,
+    flex: 1,
   },
   lastRepair: {
     ...typography.caption,
     color: colors.textSecondary,
+    flex: 1,
+    textAlign: 'center',
   },
   emptyState: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    padding: spacing.xl,
+    paddingVertical: spacing.xl * 2,
   },
   emptyTitle: {
-    ...typography.h3,
+    ...typography.h2,
     color: colors.text,
     marginTop: spacing.lg,
     marginBottom: spacing.sm,
@@ -398,30 +386,23 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.textSecondary,
     textAlign: 'center',
-  },
-  listLoadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: spacing.xl,
-  },
-  loadingText: {
-    ...typography.body,
-    color: colors.textSecondary,
-    marginTop: spacing.md,
-    textAlign: 'center',
+    lineHeight: 22,
   },
   fab: {
     position: 'absolute',
-    right: spacing.lg,
-    bottom: spacing.lg,
+    bottom: 30,
+    right: 30,
     width: 56,
     height: 56,
     borderRadius: 28,
     backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    ...shadows.lg,
-    elevation: 8,
+    ...shadows.md,
+  },
+  fabLabel: {
+    color: 'white',
+    fontSize: 24,
+    fontWeight: 'bold',
   },
 });

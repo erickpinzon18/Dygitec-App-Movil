@@ -309,7 +309,7 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   submitButton: {
-    marginTop: spacing.xl,
-    marginBottom: spacing.xl,
+    marginTop: spacing.md,
+    marginBottom: spacing.sm,
   },
 });

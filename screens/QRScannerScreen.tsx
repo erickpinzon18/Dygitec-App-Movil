@@ -12,7 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Camera, CameraView } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
-import { CompositeScreenProps } from '@react-navigation/native';
+import { CompositeScreenProps, useFocusEffect } from '@react-navigation/native';
 import { repairService, partService, equipmentService } from '../services/firebase';
 import { RootStackParamList, TabParamList } from '../types/navigation';
 import { colors, typography, spacing } from '../constants/theme';
@@ -38,6 +38,21 @@ export const QRScannerScreen: React.FC<QRScannerScreenProps> = ({ navigation }) 
 
     getCameraPermissions();
   }, []);
+
+  // Resetear estado cada vez que la pestaña reciba foco
+  useFocusEffect(
+    React.useCallback(() => {
+      // Resetear todos los estados al estado inicial
+      setScanned(false);
+      setScanning(true);
+      setFlashOn(false);
+      
+      return () => {
+        // Cleanup cuando se pierde el foco
+        setScanning(false);
+      };
+    }, [])
+  );
 
   const handleBarCodeScanned = async ({ type, data }: { type: string; data: string }) => {
     setScanned(true);
@@ -69,7 +84,17 @@ export const QRScannerScreen: React.FC<QRScannerScreenProps> = ({ navigation }) 
               {
                 text: 'Abrir',
                 onPress: () => {
+                  // Primero cambiar al tab de Repairs
                   navigation.navigate('Repairs');
+                  
+                  // Luego navegar al detalle específico usando el stack navigator de Repairs
+                  setTimeout(() => {
+                    // @ts-ignore - Navegación directa al stack de Repairs
+                    navigation.navigate('Repairs', {
+                      screen: 'RepairDetail',
+                      params: { repair }
+                    });
+                  }, 50);
                 }
               }
             ]
@@ -99,7 +124,17 @@ export const QRScannerScreen: React.FC<QRScannerScreenProps> = ({ navigation }) 
               {
                 text: 'Abrir',
                 onPress: () => {
+                  // Primero cambiar al tab de Parts
                   navigation.navigate('Parts');
+                  
+                  // Luego navegar al detalle específico usando el stack navigator de Parts
+                  setTimeout(() => {
+                    // @ts-ignore - Navegación directa al stack de Parts
+                    navigation.navigate('Parts', {
+                      screen: 'PartDetail',
+                      params: { part }
+                    });
+                  }, 50);
                 }
               }
             ]
@@ -129,7 +164,17 @@ export const QRScannerScreen: React.FC<QRScannerScreenProps> = ({ navigation }) 
               {
                 text: 'Abrir',
                 onPress: () => {
+                  // Primero cambiar al tab de Equipments
                   navigation.navigate('Equipments');
+                  
+                  // Luego navegar al detalle específico usando el stack navigator de Equipments
+                  setTimeout(() => {
+                    // @ts-ignore - Navegación directa al stack de Equipments
+                    navigation.navigate('Equipments', {
+                      screen: 'EquipmentDetail',
+                      params: { equipment }
+                    });
+                  }, 50);
                 }
               }
             ]
@@ -171,31 +216,23 @@ export const QRScannerScreen: React.FC<QRScannerScreenProps> = ({ navigation }) 
 
   const processImageForQR = async (imageUri: string) => {
     try {
-      // Mostrar que estamos procesando
-      Alert.alert(
-        'Procesando Imagen',
-        'Analizando la imagen en busca de códigos QR...'
-      );
-
-      // Simular procesamiento - en producción aquí usarías una librería nativa
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Procesar la imagen usando expo-camera
+      const scanningResults = await Camera.scanFromURLAsync(imageUri, ['qr']);
       
-      // Para demostración, vamos a simular que encontramos diferentes tipos de QR
-      // basándose en características de la imagen (esto es solo para demo)
-      const random = Math.random();
-      
-      if (random < 0.3) {
-        // Simular que encontró un QR de reparación
-        return 'repair:2Qb2o9OX597MbNJICiHY';
-      } else if (random < 0.6) {
-        // Simular que encontró un QR de pieza
-        return 'part:YWLoeNLozW3W6y468jZt';
+      if (scanningResults && scanningResults.length > 0) {
+        // Si se encontró al menos un QR, usar el primero
+        const qrData = scanningResults[0].data;
+        return qrData;
       } else {
-        // Simular que no encontró QR válido
+        // No se encontró ningún QR
         return null;
       }
     } catch (error) {
-      console.error('Error processing image:', error);
+      console.error('Error processing image for QR:', error);
+      Alert.alert(
+        'Error',
+        'Hubo un problema al analizar la imagen. Asegúrate de que la imagen contenga un código QR visible.'
+      );
       return null;
     }
   };
@@ -215,7 +252,7 @@ export const QRScannerScreen: React.FC<QRScannerScreenProps> = ({ navigation }) 
 
       // Seleccionar imagen
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: 'images',
         allowsEditing: false,
         quality: 1,
       });
@@ -223,7 +260,13 @@ export const QRScannerScreen: React.FC<QRScannerScreenProps> = ({ navigation }) 
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const imageUri = result.assets[0].uri;
         
-        // Procesar la imagen para detectar QR
+        // Mostrar que estamos procesando
+        Alert.alert(
+          'Procesando Imagen',
+          'Analizando la imagen en busca de códigos QR...'
+        );
+        
+        // Procesar la imagen para detectar QR usando expo-camera
         const qrData = await processImageForQR(imageUri);
         
         if (qrData) {
@@ -232,7 +275,7 @@ export const QRScannerScreen: React.FC<QRScannerScreenProps> = ({ navigation }) 
         } else {
           Alert.alert(
             'No se encontró código QR',
-            'No se pudo detectar un código QR válido en la imagen seleccionada.',
+            'No se pudo detectar un código QR válido en la imagen seleccionada. Asegúrate de que el código QR esté bien visible y ocupe una buena parte de la imagen.',
             [{ text: 'Intentar otra imagen' }]
           );
         }

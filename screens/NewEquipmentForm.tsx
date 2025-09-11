@@ -524,7 +524,7 @@ const styles = StyleSheet.create({
     textAlign: 'center' as const,
   },
   section: {
-    marginBottom: spacing.xl,
+    marginBottom: spacing.sm,
   },
   sectionTitle: {
     ...typography.h3,
@@ -566,7 +566,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: spacing.lg,
+    marginTop: spacing.sm,
     ...shadows.sm,
   },
   submitButtonDisabled: {
@@ -680,6 +680,7 @@ const styles = StyleSheet.create({
   },
   customerInfo: {
     flex: 1,
+    paddingHorizontal: spacing.md,
   },
   customerName: {
     ...typography.body,

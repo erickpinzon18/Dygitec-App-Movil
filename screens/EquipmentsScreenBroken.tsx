@@ -160,13 +160,9 @@ export const EquipmentsScreen: React.FC<EquipmentsScreenProps> = ({ navigation }
     </View>
   );
 
-  // Componente de loading para el área de la lista
-  const ListLoadingView = () => (
-    <View style={styles.listLoadingContainer}>
-      <LoadingSpinner size="large" />
-      <Text style={styles.loadingText}>Cargando equipos...</Text>
-    </View>
-  );
+  if (loading) {
+    return <LoadingSpinner />;
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -218,21 +214,17 @@ export const EquipmentsScreen: React.FC<EquipmentsScreenProps> = ({ navigation }
       </View>
 
       <View style={styles.listContainer}>
-        {loading && equipments.length === 0 ? (
-          <ListLoadingView />
-        ) : (
-          <FlatList
-            data={filteredEquipments}
-            renderItem={renderEquipmentItem}
-            keyExtractor={(item) => item.id}
-            style={styles.flatList}
-            refreshing={refreshing}
-            onRefresh={() => loadEquipments(true)}
-            ListEmptyComponent={!loading ? renderEmptyState : null}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={filteredEquipments.length === 0 ? styles.emptyListContainer : undefined}
-          />
-        )}
+        <FlatList
+          data={filteredEquipments}
+          renderItem={renderEquipmentItem}
+          keyExtractor={(item) => item.id}
+          style={styles.flatList}
+          refreshing={refreshing}
+          onRefresh={() => loadEquipments(true)}
+          ListEmptyComponent={renderEmptyState}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={filteredEquipments.length === 0 ? styles.emptyListContainer : undefined}
+        />
       </View>
 
       {/* Floating Action Button */}
@@ -288,6 +280,15 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: spacing.md,
   },
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    backgroundColor: colors.primaryLight,
+    borderRadius: 12,
+    padding: spacing.md,
+    marginHorizontal: spacing.lg,
+    marginVertical: spacing.md,
+  },
   statItem: {
     flex: 1,
     alignItems: 'center',
@@ -310,8 +311,6 @@ const styles = StyleSheet.create({
   listContainer: {
     flex: 1,
     paddingHorizontal: spacing.lg,
-    backgroundColor: colors.surface,
-    paddingTop: spacing.lg,
   },
   flatList: {
     flex: 1,
@@ -325,7 +324,7 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     borderRadius: 12,
     marginBottom: spacing.md,
-    ...shadows.sm,
+    ...shadows.md,
   },
   equipmentHeader: {
     flexDirection: 'row',
@@ -399,18 +398,6 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
   },
-  listLoadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: spacing.xl,
-  },
-  loadingText: {
-    ...typography.body,
-    color: colors.textSecondary,
-    marginTop: spacing.md,
-    textAlign: 'center',
-  },
   fab: {
     position: 'absolute',
     right: spacing.lg,
@@ -422,6 +409,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     ...shadows.lg,
-    elevation: 8,
   },
 });

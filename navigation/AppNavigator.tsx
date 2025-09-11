@@ -66,7 +66,7 @@ const RepairsNavigator = () => (
     <RepairsStack.Screen
       name="RepairDetail"
       component={RepairDetailScreen}
-      options={{ title: 'Detalle' }}
+      options={{ title: 'Detalle de Reparación' }}
     />
   </RepairsStack.Navigator>
 );

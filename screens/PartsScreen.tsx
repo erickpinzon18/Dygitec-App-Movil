@@ -209,16 +209,8 @@ export const PartsScreen: React.FC<PartsScreenProps> = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Inventario de Piezas</Text>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => navigation.navigate('NewPart')}
-        >
-          <Ionicons name="add" size={24} color={colors.background} />
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.searchContainer}>
+        <Text style={styles.headerTitle}>Piezas</Text>
+        
         <View style={styles.searchInputContainer}>
           <Ionicons name="search" size={20} color={colors.textSecondary} />
           <TextInput
@@ -233,6 +225,28 @@ export const PartsScreen: React.FC<PartsScreenProps> = ({ navigation }) => {
               <Ionicons name="close" size={20} color={colors.textSecondary} />
             </TouchableOpacity>
           )}
+        </View>
+
+        {/* Stats Container */}
+        <View style={styles.statsContainer}>
+          <View style={styles.statItem}>
+            <Text style={styles.statNumber}>{parts.length}</Text>
+            <Text style={styles.statLabel}>Total Piezas</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statNumber}>
+              {parts.filter(p => p.quantity > 0).length}
+            </Text>
+            <Text style={styles.statLabel}>En Stock</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statNumber}>
+              {parts.filter(p => p.quantity === 0).length}
+            </Text>
+            <Text style={styles.statLabel}>Vendidas</Text>
+          </View>
         </View>
       </View>
 
@@ -281,6 +295,14 @@ export const PartsScreen: React.FC<PartsScreenProps> = ({ navigation }) => {
           />
         )}
       </View>
+
+      {/* Floating Action Button */}
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => navigation.navigate('NewPart')}
+      >
+        <Ionicons name="add" size={24} color={colors.background} />
+      </TouchableOpacity>
     </SafeAreaView>
   );
 };
@@ -291,41 +313,27 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    backgroundColor: colors.card,
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.md,
-    backgroundColor: colors.background,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   headerTitle: {
-    ...typography.h2,
+    ...typography.h1,
     color: colors.text,
-  },
-  addButton: {
-    backgroundColor: colors.primary,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    ...shadows.sm,
-  },
-  searchContainer: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    backgroundColor: colors.background,
+    fontWeight: 'bold',
+    marginBottom: spacing.md,
   },
   searchInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.surface,
-    borderRadius: 8,
+    borderRadius: 12,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
+    marginBottom: spacing.md,
   },
   searchInput: {
     flex: 1,
@@ -496,5 +504,43 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: spacing.sm,
     lineHeight: 22,
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    backgroundColor: colors.primaryLight,
+    borderRadius: 12,
+    padding: spacing.md,
+  },
+  statItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  statNumber: {
+    ...typography.h1,
+    color: colors.primary,
+    marginBottom: spacing.xs,
+  },
+  statLabel: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  statDivider: {
+    width: 1,
+    backgroundColor: colors.border,
+    marginHorizontal: spacing.md,
+  },
+  fab: {
+    position: 'absolute',
+    right: spacing.lg,
+    bottom: spacing.lg,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...shadows.lg,
+    elevation: 8,
   },
 });

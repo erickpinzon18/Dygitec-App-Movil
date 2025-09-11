@@ -850,8 +850,8 @@ const styles = StyleSheet.create({
     // height: 44,
   },
   submitButton: {
-    marginTop: spacing.xl,
-    marginBottom: spacing.xl,
+    marginTop: spacing.md,
+    marginBottom: spacing.sm,
   },
   // Modal styles
   modalOverlay: {
@@ -926,6 +926,7 @@ const styles = StyleSheet.create({
   },
   customerInfo: {
     flex: 1,
+    paddingHorizontal: spacing.md,
   },
   customerName: {
     ...typography.body,

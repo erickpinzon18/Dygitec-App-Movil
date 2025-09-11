@@ -23,7 +23,26 @@ export const PartDetailScreen: React.FC<PartDetailScreenProps> = ({
   navigation,
   route,
 }) => {
-  const { part: initialPart } = route.params;
+  const { part: initialPart } = route.params || {};
+  
+  // Validar que part existe
+  if (!initialPart) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorTitle}>Error</Text>
+          <Text style={styles.errorText}>
+            No se pudo cargar la información de la pieza.
+          </Text>
+          <Button
+            title="Volver"
+            onPress={() => navigation.goBack()}
+          />
+        </View>
+      </SafeAreaView>
+    );
+  }
+  
   const [part, setPart] = useState(initialPart);
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -275,7 +294,7 @@ export const PartDetailScreen: React.FC<PartDetailScreenProps> = ({
           ) : (
             <>
               <Button
-                title="📱 Ver Código QR"
+                title="📱 Ver Código QR de Pieza"
                 onPress={() => {
                   const parentNav = navigation.getParent();
                   if (parentNav) {
@@ -408,5 +427,24 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     marginBottom: spacing.md,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: spacing.xl,
+  },
+  errorTitle: {
+    ...typography.h2,
+    color: colors.error,
+    marginBottom: spacing.md,
+    textAlign: 'center',
+  },
+  errorText: {
+    ...typography.body,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: spacing.xl,
   },
 });

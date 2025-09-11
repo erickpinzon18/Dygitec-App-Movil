@@ -11,8 +11,8 @@ import {
 } from 'react-native';
 import { useRoute, useNavigation, useFocusEffect, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { repairService } from '../services/firebase';
-import { Repair, EquipmentWithDetails, RepairStatus } from '../types';
+import { repairService, customerService } from '../services/firebase';
+import { Repair, EquipmentWithDetails, RepairStatus, Customer } from '../types';
 import { EquipmentsStackParamList } from '../types/navigation';
 import { useAuth } from '../contexts/AuthContext';
 import { colors, typography, spacing, shadows } from '../constants/theme';
@@ -23,41 +23,70 @@ type EquipmentDetailRouteProp = RouteProp<EquipmentsStackParamList, 'EquipmentDe
 export const EquipmentDetailScreen = () => {
   const navigation = useNavigation<any>(); // Usar any temporalmente para evitar problemas de tipo
   const route = useRoute<EquipmentDetailRouteProp>();
-  const { equipment } = route.params;
+  const { equipment } = route.params || {};
   const { client } = useAuth();
   
+  // Validar que equipment existe
+  if (!equipment) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.errorContainer}>
+          <Ionicons name="alert-circle-outline" size={64} color={colors.error} />
+          <Text style={styles.errorTitle}>Error</Text>
+          <Text style={styles.errorText}>
+            No se pudo cargar la información del equipo.
+          </Text>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Text style={styles.backButtonText}>Volver</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+  
   const [repairs, setRepairs] = useState<Repair[]>([]);
+  const [customer, setCustomer] = useState<Customer | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const loadRepairs = useCallback(async () => {
+  const loadEquipmentData = useCallback(async () => {
     if (!client?.id) return;
     
     try {
+      // Cargar reparaciones del equipo
       const equipmentRepairs = await repairService.getByEquipmentId(
         equipment.id, 
         client.id
       );
       setRepairs(equipmentRepairs);
+
+      // Cargar información del cliente del equipo
+      if (equipment.customerId) {
+        const customerData = await customerService.getById(equipment.customerId);
+        setCustomer(customerData);
+      }
     } catch (error) {
-      console.error('Error loading equipment repairs:', error);
-      Alert.alert('Error', 'No se pudieron cargar las reparaciones del equipo');
+      console.error('Error loading equipment data:', error);
+      Alert.alert('Error', 'No se pudieron cargar los datos del equipo');
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [equipment.id, client?.id]);
+  }, [equipment.id, equipment.customerId, client?.id]);
 
   useFocusEffect(
     useCallback(() => {
-      loadRepairs();
-    }, [loadRepairs])
+      loadEquipmentData();
+    }, [loadEquipmentData])
   );
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
-    loadRepairs();
-  }, [loadRepairs]);
+    loadEquipmentData();
+  }, [loadEquipmentData]);
 
   const handleAddRepair = () => {
     const parentNavigation = navigation.getParent();
@@ -72,17 +101,16 @@ export const EquipmentDetailScreen = () => {
   const handleRepairPress = (repair: Repair) => {
     const parentNavigation = navigation.getParent();
     if (parentNavigation) {
-      // Aquí necesitaremos convertir Repair a RepairWithDetails
-      // Por ahora navegamos con la reparación básica
+      // Crear un objeto RepairWithDetails con la información que tenemos
+      const repairWithDetails = {
+        ...repair,
+        equipment: equipment,
+        customer: customer // Usar el cliente que cargamos
+      };
+      
       parentNavigation.navigate('Repairs', {
         screen: 'RepairDetail',
-        params: { 
-          repair: {
-            ...repair,
-            equipment: equipment,
-            customer: equipment.customer
-          }
-        }
+        params: { repair: repairWithDetails }
       });
     }
   };
@@ -213,7 +241,9 @@ export const EquipmentDetailScreen = () => {
         <View style={styles.equipmentHeader}>
           <View style={styles.equipmentInfo}>
             <Text style={styles.equipmentName}>{equipment.brand} {equipment.model}</Text>
-            <Text style={styles.customerName}>Cliente: {equipment.customer.name}</Text>
+            <Text style={styles.customerName}>
+              Cliente: {customer?.name || 'Cargando...'}
+            </Text>
             {equipment.year && (
               <Text style={styles.equipmentDetail}>Año: {equipment.year}</Text>
             )}
@@ -513,6 +543,36 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   emptyButtonText: {
+    ...typography.button,
+    color: colors.card,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: spacing.xl,
+  },
+  errorTitle: {
+    ...typography.h2,
+    color: colors.error,
+    marginTop: spacing.lg,
+    marginBottom: spacing.md,
+    textAlign: 'center',
+  },
+  errorText: {
+    ...typography.body,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: spacing.xl,
+  },
+  backButton: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderRadius: 8,
+  },
+  backButtonText: {
     ...typography.button,
     color: colors.card,
   },

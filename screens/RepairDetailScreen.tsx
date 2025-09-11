@@ -419,16 +419,21 @@ export const RepairDetailScreen: React.FC<RepairDetailScreenProps> = ({
                     ) : (
                         <>
                             <Button
-                                title="📱 Ver Código QR"
+                                title="📱 Ver QR del Equipo"
                                 onPress={() => {
                                     const parentNav = navigation.getParent();
-                                    if (parentNav) {
+                                    if (parentNav && repair.equipment) {
                                         parentNav.navigate('BarcodeDisplay', {
-                                            id: repair.id,
-                                            type: 'repair' as const,
-                                            title: repair.title,
-                                            subtitle: `${repair.equipment?.brand} ${repair.equipment?.model}`,
+                                            id: repair.equipment.id,
+                                            type: 'equipment' as const,
+                                            title: `${repair.equipment.brand} ${repair.equipment.model}`,
+                                            subtitle: `Serie: ${repair.equipment.serialNumber || 'N/A'}`,
                                         });
+                                    } else {
+                                        Alert.alert(
+                                            'Error',
+                                            'No se pudo cargar la información del equipo'
+                                        );
                                     }
                                 }}
                                 style={styles.barcodeButton}

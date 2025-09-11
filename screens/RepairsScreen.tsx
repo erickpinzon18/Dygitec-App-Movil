@@ -221,16 +221,8 @@ export const RepairsScreen: React.FC<RepairsScreenProps> = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Registros</Text>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => navigation.navigate('NewRepair', {})}
-        >
-          <Ionicons name="add" size={24} color={colors.background} />
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.searchContainer}>
+        <Text style={styles.headerTitle}>Reparaciones</Text>
+        
         <View style={styles.searchInputContainer}>
           <Ionicons name="search" size={20} color={colors.textSecondary} />
           <TextInput
@@ -245,6 +237,28 @@ export const RepairsScreen: React.FC<RepairsScreenProps> = ({ navigation }) => {
               <Ionicons name="close" size={20} color={colors.textSecondary} />
             </TouchableOpacity>
           )}
+        </View>
+
+        {/* Stats Container */}
+        <View style={styles.statsContainer}>
+          <View style={styles.statItem}>
+            <Text style={styles.statNumber}>{repairs.length}</Text>
+            <Text style={styles.statLabel}>Total</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statNumber}>
+              {repairs.filter(r => r.status === RepairStatus.PENDING || r.status === RepairStatus.IN_PROGRESS).length}
+            </Text>
+            <Text style={styles.statLabel}>Activas</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statNumber}>
+              {repairs.filter(r => r.status === RepairStatus.COMPLETED || r.status === RepairStatus.DELIVERED).length}
+            </Text>
+            <Text style={styles.statLabel}>Completadas</Text>
+          </View>
         </View>
       </View>
 
@@ -293,6 +307,14 @@ export const RepairsScreen: React.FC<RepairsScreenProps> = ({ navigation }) => {
           />
         )}
       </View>
+
+      {/* Floating Action Button */}
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => navigation.navigate('NewRepair', {})}
+      >
+        <Ionicons name="add" size={24} color={colors.background} />
+      </TouchableOpacity>
     </SafeAreaView>
   );
 };
@@ -303,17 +325,15 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
+    paddingTop: spacing.lg,
     paddingBottom: spacing.md,
     backgroundColor: colors.background,
   },
   headerTitle: {
-    ...typography.h2,
+    ...typography.h1,
     color: colors.text,
+    marginBottom: spacing.md,
   },
   addButton: {
     backgroundColor: colors.primary,
@@ -322,7 +342,20 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    ...shadows.sm,
+    ...shadows.lg,
+  },
+  fab: {
+    position: 'absolute',
+    right: spacing.lg,
+    bottom: spacing.lg,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...shadows.lg,
+    elevation: 8,
   },
   filtersContainer: {
     paddingHorizontal: spacing.lg,
@@ -445,11 +478,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 22,
   },
-  searchContainer: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    backgroundColor: colors.background,
-  },
   searchInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -459,11 +487,38 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     borderWidth: 1,
     borderColor: colors.border,
+    marginBottom: spacing.md,
   },
   searchInput: {
     flex: 1,
     marginLeft: spacing.sm,
     ...typography.body,
     color: colors.text,
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    backgroundColor: colors.primaryLight,
+    borderRadius: 12,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+  },
+  statItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  statNumber: {
+    ...typography.h1,
+    color: colors.primary,
+    marginBottom: spacing.xs,
+  },
+  statLabel: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  statDivider: {
+    width: 1,
+    backgroundColor: colors.border,
+    marginHorizontal: spacing.md,
   },
 });
