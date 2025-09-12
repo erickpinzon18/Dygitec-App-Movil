@@ -13,6 +13,8 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import QRCode from 'react-native-qrcode-svg';
 import ViewShot from 'react-native-view-shot';
 import * as MediaLibrary from 'expo-media-library';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
 import { Button } from '../components/Button';
 import { colors, typography, spacing, shadows } from '../constants/theme';
 import { RootStackParamList } from '../types/navigation';
@@ -54,21 +56,6 @@ export const RepairNoteDisplayScreen: React.FC<RepairNoteDisplayScreenProps> = (
         return "Cancelada";
       default:
         return status;
-    }
-  };
-
-  const getPriorityText = (priority: Priority) => {
-    switch (priority) {
-      case Priority.LOW:
-        return "Baja";
-      case Priority.MEDIUM:
-        return "Media";
-      case Priority.HIGH:
-        return "Alta";
-      case Priority.URGENT:
-        return "Urgente";
-      default:
-        return priority;
     }
   };
 
@@ -126,6 +113,154 @@ export const RepairNoteDisplayScreen: React.FC<RepairNoteDisplayScreenProps> = (
     }
   };
 
+  const generateHTML = () => {
+    return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <title>Ticket de Reparación</title>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          max-width: 300px;
+          margin: 0 auto;
+          padding: 10px;
+          background: white;
+        }
+        .ticket-header {
+          text-align: center;
+          border-bottom: 2px solid #000;
+          padding-bottom: 10px;
+          margin-bottom: 15px;
+        }
+        .ticket-title {
+          font-size: 16px;
+          font-weight: bold;
+          margin-bottom: 5px;
+        }
+        .ticket-id {
+          font-size: 12px;
+          color: #666;
+        }
+        .repair-title {
+          font-size: 14px;
+          font-weight: bold;
+          margin-bottom: 8px;
+        }
+        .repair-description {
+          font-size: 11px;
+          margin-bottom: 10px;
+          line-height: 1.4;
+        }
+        .info-line {
+          font-size: 11px;
+          margin-bottom: 5px;
+        }
+        .label {
+          font-weight: bold;
+        }
+        .cost-value {
+          font-size: 14px;
+          font-weight: bold;
+          color: #2E7D32;
+        }
+        .qr-section {
+          text-align: center;
+          margin: 15px 0;
+          border-top: 1px dashed #000;
+          padding-top: 10px;
+        }
+        .qr-label {
+          font-size: 10px;
+          margin-bottom: 5px;
+        }
+        .equipment-info {
+          font-size: 10px;
+          margin-top: 5px;
+        }
+        .generated-text {
+          font-size: 9px;
+          text-align: center;
+          color: #666;
+          margin-top: 10px;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="ticket-header">
+        <div class="ticket-title">🎫 TICKET DE REPARACIÓN</div>
+        <div class="ticket-id">#${repair.id}</div>
+      </div>
+      
+      <div class="repair-title">${repair.title}</div>
+      <div class="repair-description">${repair.description}</div>
+      
+      <div class="info-line">
+        <span class="label">Estado: </span>${getStatusText(repair.status)}
+      </div>
+      
+      <div class="info-line">
+        <span class="label">Fecha de entrega: </span>
+        ${repair.completionDate?.toLocaleDateString('es-ES') || 
+          repair.expectedCompletionDate?.toLocaleDateString('es-ES') || 
+          'Por definir'}
+      </div>
+      
+      ${repair.cost && repair.cost > 0 ? `
+        <div class="info-line">
+          <span class="label">Costo: </span>
+          <span class="cost-value">$${repair.cost.toFixed(2)}</span>
+        </div>
+      ` : ''}
+      
+      <div class="qr-section">
+        <div class="qr-label">Código del Equipo</div>
+        <div class="equipment-info">${repair.equipment.brand} ${repair.equipment.model}</div>
+      </div>
+      
+      <div class="generated-text">
+        Generado: ${new Date().toLocaleDateString('es-ES')}
+      </div>
+    </body>
+    </html>`;
+  };
+
+  const handleSaveAsPDF = async () => {
+    try {
+      setLoading(true);
+      
+      const htmlContent = generateHTML();
+      
+      // Generar PDF
+      const { uri } = await Print.printToFileAsync({
+        html: htmlContent,
+        base64: false,
+        width: 226, // Ancho típico de impresora térmica en puntos (80mm)
+        height: undefined, // Altura automática
+      });
+
+      // Compartir el PDF generado
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri, {
+          mimeType: 'application/pdf',
+          dialogTitle: 'Compartir Ticket de Reparación',
+          UTI: 'com.adobe.pdf',
+        });
+        
+        Alert.alert('Éxito', 'PDF generado y listo para compartir');
+      } else {
+        Alert.alert('PDF Generado', `PDF guardado en: ${uri}`);
+      }
+      
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      Alert.alert('Error', 'No se pudo generar el PDF');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSaveToGallery = async () => {
     try {
       setLoading(true);
@@ -144,13 +279,13 @@ export const RepairNoteDisplayScreen: React.FC<RepairNoteDisplayScreenProps> = (
       
       if (imageUri) {
         await MediaLibrary.saveToLibraryAsync(imageUri);
-        Alert.alert('Éxito', 'Nota guardada en la galería exitosamente');
+        Alert.alert('Éxito', 'Ticket guardado en la galería exitosamente');
       } else {
-        Alert.alert('Error', 'No se pudo generar la imagen de la nota');
+        Alert.alert('Error', 'No se pudo generar la imagen del ticket');
       }
     } catch (error) {
-      console.error('Error saving note to gallery:', error);
-      Alert.alert('Error', 'No se pudo guardar la nota en la galería');
+      console.error('Error saving ticket to gallery:', error);
+      Alert.alert('Error', 'No se pudo guardar el ticket en la galería');
     } finally {
       setLoading(false);
     }
@@ -161,138 +296,61 @@ export const RepairNoteDisplayScreen: React.FC<RepairNoteDisplayScreenProps> = (
       <ScrollView style={styles.scrollView}>
         <ViewShot 
           ref={noteRef} 
-          style={styles.noteContainer}
+          style={styles.ticketContainer}
           options={{ format: "jpg", quality: 0.9 }}
         >
-          {/* Header */}
-          <View style={styles.noteHeader}>
-            <View style={styles.headerContent}>
-              <Text style={styles.noteTitle}>📋 NOTA DE REPARACIÓN</Text>
-              <Text style={styles.noteSubtitle}>ID: {repair.id}</Text>
-            </View>
+          {/* Header - Ticket Style */}
+          <View style={styles.ticketHeader}>
+            <Text style={styles.ticketTitle}>🎫 TICKET DE REPARACIÓN</Text>
+            <Text style={styles.ticketId}>#{repair.id}</Text>
+          </View>
+
+          {/* Repair Info - Simplified for ticket */}
+          <View style={styles.ticketSection}>
+            <Text style={styles.repairTitle}>{repair.title}</Text>
+            <Text style={styles.repairDescription}>{repair.description}</Text>
             
-            {/* QR Codes */}
-            <View style={styles.qrCodesContainer}>
-              {/* QR de la Reparación */}
-              <View style={styles.qrContainer}>
-                <Text style={styles.qrLabel}>🔧 Reparación</Text>
-                <QRCode
-                  value={generateRepairQRData(repair.id)}
-                  size={70}
-                  color={colors.text}
-                  backgroundColor="white"
-                />
-              </View>
+            <View style={styles.ticketInfo}>
+              <Text style={styles.infoLine}>
+                <Text style={styles.label}>Estado: </Text>
+                <Text style={styles.value}>{getStatusText(repair.status)}</Text>
+              </Text>
               
-              {/* QR del Equipo */}
-              <View style={styles.qrContainer}>
-                <Text style={styles.qrLabel}>💻 Equipo</Text>
-                <QRCode
-                  value={generateEquipmentQRData(repair.equipment.id)}
-                  size={70}
-                  color={colors.text}
-                  backgroundColor="white"
-                />
-              </View>
-            </View>
-          </View>
-
-          {/* Repair Info */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>🔧 Información de Reparación</Text>
-            <Text style={styles.itemTitle}>{repair.title}</Text>
-            <Text style={styles.itemDescription}>{repair.description}</Text>
-            
-            <View style={styles.infoGrid}>
-              <View style={styles.infoItem}>
-                <Text style={styles.infoLabel}>Estado:</Text>
-                <Text style={styles.infoValue}>{getStatusText(repair.status)}</Text>
-              </View>
-              <View style={styles.infoItem}>
-                <Text style={styles.infoLabel}>Prioridad:</Text>
-                <Text style={styles.infoValue}>{getPriorityText(repair.priority)}</Text>
-              </View>
-            </View>
-
-            <View style={styles.infoGrid}>
-              <View style={styles.infoItem}>
-                <Text style={styles.infoLabel}>Fecha de entrada:</Text>
-                <Text style={styles.infoValue}>
-                  {repair.entryDate?.toLocaleDateString('es-ES') || 'No especificada'}
+              <Text style={styles.infoLine}>
+                <Text style={styles.label}>Fecha de entrega: </Text>
+                <Text style={styles.value}>
+                  {repair.completionDate?.toLocaleDateString('es-ES') || 
+                   repair.expectedCompletionDate?.toLocaleDateString('es-ES') || 
+                   'Por definir'}
                 </Text>
-              </View>
-              {repair.expectedCompletionDate && (
-                <View style={styles.infoItem}>
-                  <Text style={styles.infoLabel}>Fecha estimada:</Text>
-                  <Text style={styles.infoValue}>
-                    {repair.expectedCompletionDate.toLocaleDateString('es-ES')}
-                  </Text>
-                </View>
+              </Text>
+
+              {repair.cost && repair.cost > 0 && (
+                <Text style={styles.infoLine}>
+                  <Text style={styles.label}>Costo: </Text>
+                  <Text style={styles.costValue}>${repair.cost.toFixed(2)}</Text>
+                </Text>
               )}
             </View>
-
-            {repair.cost && repair.cost > 0 && (
-              <View style={styles.infoItem}>
-                <Text style={styles.infoLabel}>Costo:</Text>
-                <Text style={styles.costValue}>${repair.cost.toFixed(2)}</Text>
-              </View>
-            )}
           </View>
 
-          {/* Customer Info */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>👤 Información del Cliente</Text>
-            <Text style={styles.customerName}>{repair.customer.name}</Text>
+          {/* Equipment QR at bottom */}
+          <View style={styles.ticketFooter}>
+            <View style={styles.qrSection}>
+              <Text style={styles.qrLabel}>Código del Equipo</Text>
+              <QRCode
+                value={generateEquipmentQRData(repair.equipment.id)}
+                size={80}
+                color="#000"
+                backgroundColor="white"
+              />
+              <Text style={styles.equipmentInfo}>
+                {repair.equipment.brand} {repair.equipment.model}
+              </Text>
+            </View>
             
-            <View style={styles.infoGrid}>
-              <View style={styles.infoItem}>
-                <Text style={styles.infoLabel}>Teléfono:</Text>
-                <Text style={styles.infoValue}>{repair.customer.phone}</Text>
-              </View>
-              {repair.customer.email && (
-                <View style={styles.infoItem}>
-                  <Text style={styles.infoLabel}>Email:</Text>
-                  <Text style={styles.infoValue}>{repair.customer.email}</Text>
-                </View>
-              )}
-            </View>
-          </View>
-
-          {/* Equipment Info */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>💻 Información del Equipo</Text>
-            <Text style={styles.equipmentName}>
-              {repair.equipment.brand} {repair.equipment.model}
-            </Text>
-            
-            <View style={styles.infoGrid}>
-              {repair.equipment.year && (
-                <View style={styles.infoItem}>
-                  <Text style={styles.infoLabel}>Año:</Text>
-                  <Text style={styles.infoValue}>{repair.equipment.year}</Text>
-                </View>
-              )}
-              {repair.equipment.serialNumber && (
-                <View style={styles.infoItem}>
-                  <Text style={styles.infoLabel}>Serie:</Text>
-                  <Text style={styles.infoValue}>{repair.equipment.serialNumber}</Text>
-                </View>
-              )}
-            </View>
-          </View>
-
-          {/* Notes */}
-          {repair.notes && (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>📝 Notas Adicionales</Text>
-              <Text style={styles.notesText}>{repair.notes}</Text>
-            </View>
-          )}
-
-          {/* Footer */}
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>
-              Generado el {new Date().toLocaleDateString('es-ES')} a las {new Date().toLocaleTimeString('es-ES')}
+            <Text style={styles.generatedText}>
+              Generado: {new Date().toLocaleDateString('es-ES')}
             </Text>
           </View>
         </ViewShot>
@@ -300,17 +358,24 @@ export const RepairNoteDisplayScreen: React.FC<RepairNoteDisplayScreenProps> = (
         {/* Action Buttons */}
         <View style={styles.buttonContainer}>
           <Button
-            title="📤 Guardar y Compartir"
-            onPress={handleShare}
+            title="📄 Generar PDF"
+            onPress={handleSaveAsPDF}
             disabled={loading}
-            style={styles.shareButton}
+            style={styles.pdfButton}
           />
           <Button
-            title="💾 Solo Guardar"
+            title="💾 Guardar Imagen"
             onPress={handleSaveToGallery}
             disabled={loading}
             variant="outline"
             style={styles.saveButton}
+          />
+          <Button
+            title="📤 Compartir Imagen"
+            onPress={handleShare}
+            disabled={loading}
+            variant="outline"
+            style={styles.shareButton}
           />
         </View>
       </ScrollView>
@@ -326,138 +391,118 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  noteContainer: {
+  // Estilos para formato de ticket
+  ticketContainer: {
     margin: spacing.lg,
     padding: spacing.lg,
     backgroundColor: 'white',
-    borderRadius: 12,
+    borderRadius: 8,
     ...shadows.md,
+    maxWidth: 320,
+    alignSelf: 'center',
   },
-  noteHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: spacing.lg,
+  ticketHeader: {
+    alignItems: 'center',
     paddingBottom: spacing.md,
+    marginBottom: spacing.md,
     borderBottomWidth: 2,
-    borderBottomColor: colors.primary,
+    borderBottomColor: '#000',
+    borderStyle: 'solid',
   },
-  headerContent: {
-    flex: 1,
-  },
-  noteTitle: {
-    ...typography.h2,
-    color: colors.primary,
+  ticketTitle: {
+    fontSize: 16,
     fontWeight: 'bold',
+    color: '#000',
     marginBottom: spacing.xs,
+    textAlign: 'center',
   },
-  noteSubtitle: {
-    ...typography.bodySmall,
+  ticketId: {
+    fontSize: 12,
     color: colors.textSecondary,
     fontFamily: 'monospace',
   },
-  qrContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing.sm,
-    backgroundColor: colors.surface,
-    borderRadius: 8,
-    marginHorizontal: spacing.xs,
+  ticketSection: {
+    marginBottom: spacing.lg,
   },
-  qrCodesContainer: {
+  repairTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#000',
+    marginBottom: spacing.sm,
+    textAlign: 'center',
+  },
+  repairDescription: {
+    fontSize: 11,
+    color: '#000',
+    marginBottom: spacing.md,
+    lineHeight: 16,
+    textAlign: 'justify',
+  },
+  ticketInfo: {
+    marginTop: spacing.sm,
+  },
+  infoLine: {
+    fontSize: 11,
+    color: '#000',
+    marginBottom: spacing.xs,
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexWrap: 'wrap',
+  },
+  label: {
+    fontWeight: 'bold',
+    color: '#000',
+  },
+  value: {
+    color: '#000',
+  },
+  costValue: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    color: '#2E7D32',
+  },
+  ticketFooter: {
+    borderTopWidth: 1,
+    borderTopColor: '#000',
+    borderStyle: 'dashed',
+    paddingTop: spacing.md,
+    alignItems: 'center',
+  },
+  qrSection: {
+    alignItems: 'center',
+    marginBottom: spacing.sm,
   },
   qrLabel: {
-    ...typography.bodySmall,
+    fontSize: 10,
     color: colors.textSecondary,
     fontWeight: '600',
     textAlign: 'center',
     marginBottom: spacing.xs,
   },
-  section: {
-    marginBottom: spacing.lg,
-    paddingBottom: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+  equipmentInfo: {
+    fontSize: 10,
+    color: '#000',
+    textAlign: 'center',
+    marginTop: spacing.xs,
   },
-  sectionTitle: {
-    ...typography.h3,
-    color: colors.primary,
-    marginBottom: spacing.md,
-    fontWeight: '600',
-  },
-  itemTitle: {
-    ...typography.h3,
-    color: colors.text,
-    marginBottom: spacing.sm,
-    fontWeight: 'bold',
-  },
-  itemDescription: {
-    ...typography.body,
-    color: colors.text,
-    marginBottom: spacing.md,
-    lineHeight: 22,
-  },
-  customerName: {
-    ...typography.h3,
-    color: colors.text,
-    marginBottom: spacing.md,
-    fontWeight: 'bold',
-  },
-  equipmentName: {
-    ...typography.h3,
-    color: colors.text,
-    marginBottom: spacing.md,
-    fontWeight: 'bold',
-  },
-  infoGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginBottom: spacing.sm,
-  },
-  infoItem: {
-    width: '50%',
-    paddingRight: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  infoLabel: {
-    ...typography.bodySmall,
+  generatedText: {
+    fontSize: 9,
     color: colors.textSecondary,
-    fontWeight: '600',
-    marginBottom: spacing.xs,
-  },
-  infoValue: {
-    ...typography.body,
-    color: colors.text,
-  },
-  costValue: {
-    ...typography.h3,
-    color: colors.success,
-    fontWeight: 'bold',
-  },
-  notesText: {
-    ...typography.body,
-    color: colors.text,
-    lineHeight: 22,
+    textAlign: 'center',
     fontStyle: 'italic',
   },
-  footer: {
-    marginTop: spacing.sm,
-    alignItems: 'center',
-  },
-  footerText: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-    fontStyle: 'italic',
-  },
+  // Botones
   buttonContainer: {
     padding: spacing.lg,
+    gap: spacing.sm,
+  },
+  pdfButton: {
+    backgroundColor: colors.primary,
+    marginBottom: spacing.sm,
   },
   shareButton: {
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
   },
   saveButton: {
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
   },
 });

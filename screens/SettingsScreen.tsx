@@ -174,9 +174,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
           <SettingsItem
             icon="information-circle-outline"
             title="Acerca de Dygitec"
-            subtitle="Versión 1.3.0"
+            subtitle="Versión 1.4.0"
             onPress={() => Alert.alert(
-              'Dygitec v1.3.0',
+              'Dygitec v1.4.0',
               'Aplicación de gestión de reparaciones de computadoras.\n\nDesarrollado para facilitar el control de reparaciones, inventario de piezas y seguimiento de clientes.\n\n- github.com/erickpinzon18',
               [{ text: 'OK' }]
             )}
