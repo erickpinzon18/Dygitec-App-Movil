@@ -22,7 +22,7 @@
     "expo-dev-client": "~5.2.4",
     "expo-image-loader": "^6.0.0",
     "expo-image-manipulator": "^14.0.7",
-    "expo-image-picker": "~16.0.4",
+    "expo-image-picker": "~16.1.4",
     "expo-media-library": "~17.1.7",
     "expo-print": "~14.1.4",
     "expo-sharing": "~13.1.5",
