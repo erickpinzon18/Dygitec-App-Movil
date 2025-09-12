@@ -262,28 +262,44 @@ export const NewRepairScreen: React.FC<NewRepairScreenProps> = ({ navigation }) 
         notes: formData.notes || '',
       });
 
+      // Crear el objeto RepairWithDetails para navegar al detalle
+      const currentDate = new Date();
+      const newRepair = {
+        id: repairId,
+        clientId: client!.id,
+        registerBy: user!.id,
+        customerId: selectedCustomer.id,
+        equipmentId: selectedEquipment.id,
+        title: formData.title,
+        description: formData.description,
+        status: RepairStatus.PENDING,
+        priority: formData.priority,
+        entryDate: new Date(),
+        expectedCompletionDate: formData.expectedDays ? expectedCompletionDate : undefined,
+        cost: formData.cost ? parseFloat(formData.cost) : 0,
+        notes: formData.notes || '',
+        createdAt: currentDate,
+        updatedAt: currentDate,
+        customer: selectedCustomer,
+        equipment: selectedEquipment,
+      };
+
       Alert.alert(
         'Éxito', 
         'Reparación registrada exitosamente',
         [
           {
-            text: 'Ver Código',
+            text: 'Ver Detalles',
             onPress: () => {
-              const parentNav = navigation.getParent();
-              if (parentNav) {
-                parentNav.navigate('BarcodeDisplay', {
-                  id: repairId,
-                  type: 'repair' as const,
-                  title: formData.title,
-                  subtitle: `${selectedEquipment.brand} ${selectedEquipment.model}`,
-                });
-              }
+              // Resetear el stack para que regrese directamente a la lista
+              navigation.reset({
+                index: 1,
+                routes: [
+                  { name: 'RepairsList' },
+                  { name: 'RepairDetail', params: { repair: newRepair } },
+                ],
+              });
             },
-          },
-          { 
-            text: 'Continuar', 
-            onPress: () => navigation.goBack(),
-            style: 'cancel',
           },
         ]
       );
@@ -848,6 +864,7 @@ const styles = StyleSheet.create({
   },
   picker: {
     // height: 44,
+    color: colors.text,
   },
   submitButton: {
     marginTop: spacing.md,

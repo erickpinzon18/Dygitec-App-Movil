@@ -238,24 +238,37 @@ export const QRScannerScreen: React.FC<QRScannerScreenProps> = ({ navigation }) 
 
   const processImageForQR = async (imageUri: string) => {
     try {
+      console.log('Processing image for QR:', imageUri);
+      
+      // Verificar si el método scanFromURLAsync existe
+      if (!Camera.scanFromURLAsync) {
+        throw new Error('Camera.scanFromURLAsync no está disponible en esta versión');
+      }
+      
       // Procesar la imagen usando expo-camera
-      const scanningResults = await Camera.scanFromURLAsync(imageUri, ['qr']);
+      const scanningResults = await Camera.scanFromURLAsync(imageUri);
+      
+      console.log('Scanning results:', scanningResults);
       
       if (scanningResults && scanningResults.length > 0) {
-        // Si se encontró al menos un QR, usar el primero
-        const qrData = scanningResults[0].data;
-        return qrData;
+        // Usar el primer resultado encontrado
+        console.log('Code found:', scanningResults[0]);
+        return scanningResults[0].data;
       } else {
-        // No se encontró ningún QR
+        console.log('No codes found in image');
         return null;
       }
     } catch (error) {
       console.error('Error processing image for QR:', error);
-      Alert.alert(
-        'Error',
-        'Hubo un problema al analizar la imagen. Asegúrate de que la imagen contenga un código QR visible.'
-      );
-      return null;
+      console.error('Error details:', JSON.stringify(error, null, 2));
+      
+      // Si el método no existe, informar al usuario
+      if (error instanceof Error && error.message.includes('scanFromURLAsync')) {
+        throw new Error('La función de escaneo desde imagen no está disponible. Por favor, usa la cámara para escanear códigos QR.');
+      }
+      
+      // No mostrar alert aquí, lo manejará la función que llama
+      throw error;
     }
   };
 
@@ -281,24 +294,54 @@ export const QRScannerScreen: React.FC<QRScannerScreenProps> = ({ navigation }) 
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const imageUri = result.assets[0].uri;
+        console.log('Selected image URI:', imageUri);
+        console.log('Image details:', result.assets[0]);
         
-        // Mostrar que estamos procesando
+        // Mostrar alert de procesamiento que se puede cancelar
         Alert.alert(
           'Procesando Imagen',
-          'Analizando la imagen en busca de códigos QR...'
+          'Analizando la imagen en busca de códigos QR...',
+          [
+            { 
+              text: 'Cancelar',
+              style: 'cancel',
+              onPress: () => {
+                // Resetear scanner para volver a mostrar la cámara
+                resetScanner();
+                console.log('Procesamiento cancelado por el usuario');
+              }
+            }
+          ]
         );
         
-        // Procesar la imagen para detectar QR usando expo-camera
-        const qrData = await processImageForQR(imageUri);
-        
-        if (qrData) {
-          // Si se detectó un QR, procesarlo igual que el escaneo de cámara
-          await handleBarCodeScanned({ type: 'qr', data: qrData });
-        } else {
+        try {
+          // Procesar la imagen para detectar QR usando expo-camera
+          const qrData = await processImageForQR(imageUri);
+          
+          if (qrData) {
+            console.log('QR Data found from image:', qrData);
+            // Si se detectó un QR, procesarlo igual que el escaneo de cámara
+            await handleBarCodeScanned({ type: 'qr', data: qrData });
+          } else {
+            console.log('No QR data found in image');
+            Alert.alert(
+              'No se encontró código QR',
+              'No se pudo detectar un código QR válido en la imagen seleccionada. Asegúrate de que el código QR esté bien visible y ocupe una buena parte de la imagen.',
+              [{ 
+                text: 'Intentar otra imagen',
+                onPress: () => resetScanner()
+              }]
+            );
+          }
+        } catch (error: any) {
+          console.error('Error processing image:', error);
           Alert.alert(
-            'No se encontró código QR',
-            'No se pudo detectar un código QR válido en la imagen seleccionada. Asegúrate de que el código QR esté bien visible y ocupe una buena parte de la imagen.',
-            [{ text: 'Intentar otra imagen' }]
+            'Error al Procesar',
+            `Hubo un problema al analizar la imagen: ${error?.message || 'Error desconocido'}. Por favor, asegúrate de que la imagen contenga un código QR visible y bien enfocado.`,
+            [{ 
+              text: 'Reintentar',
+              onPress: () => resetScanner()
+            }]
           );
         }
       }
@@ -376,13 +419,10 @@ export const QRScannerScreen: React.FC<QRScannerScreenProps> = ({ navigation }) 
 
         <View style={styles.instructionsContainer}>
           <Text style={styles.instructionsTitle}>
-            {scanning ? 'Apunta la cámara al código QR' : 'Procesando...'}
+            Apunta la cámara al código QR
           </Text>
           <Text style={styles.instructionsText}>
-            {scanning 
-              ? 'El escaneo se realizará automáticamente' 
-              : 'Por favor espera...'
-            }
+            El escaneo se realizará automáticamente
           </Text>
         </View>
       </View>

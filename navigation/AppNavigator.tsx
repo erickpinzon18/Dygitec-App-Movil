@@ -30,6 +30,7 @@ import { SettingsScreen } from '../screens/SettingsScreen';
 import { UserManagementScreen } from '../screens/UserManagementScreen';
 import { NewUserScreen } from '../screens/NewUserScreen';
 import { BarcodeDisplayScreen } from '../screens/BarcodeDisplayScreen';
+import { RepairNoteDisplayScreen } from '../screens/RepairNoteDisplayScreen';
 import { QRScannerScreen } from '../screens/QRScannerScreen';
 
 import { colors } from '../constants/theme';
@@ -282,6 +283,22 @@ const MainNavigator = () => (
       options={{ 
         headerShown: true,
         title: 'Código QR',
+        headerStyle: {
+          backgroundColor: colors.background,
+        },
+        headerTintColor: colors.text,
+        headerTitleStyle: {
+          fontWeight: '600',
+          fontSize: 18,
+        },
+      }}
+    />
+    <AuthStack.Screen 
+      name="RepairNoteDisplay" 
+      component={RepairNoteDisplayScreen}
+      options={{ 
+        headerShown: true,
+        title: 'Nota de Reparación',
         headerStyle: {
           backgroundColor: colors.background,
         },

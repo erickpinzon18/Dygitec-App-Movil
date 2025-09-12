@@ -386,8 +386,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   listContainer: {
-    padding: spacing.lg,
-    marginBottom: spacing.xl * 5, 
+    flex: 1,
+    paddingTop: spacing.lg,
+    paddingVertical: spacing.md,
   },
   repairCard: {
     backgroundColor: colors.background,
@@ -451,7 +452,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   flatListContent: {
-    paddingBottom: spacing.xxl + spacing.lg, // Más espacio para evitar que se corte con el footer
+    paddingBottom: 80, // Espacio para el FAB (56px + 24px de margen)
   },
   emptyListContainer: {
     flex: 1,
@@ -500,7 +501,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primaryLight,
     borderRadius: 12,
     padding: spacing.md,
-    marginBottom: spacing.md,
   },
   statItem: {
     flex: 1,

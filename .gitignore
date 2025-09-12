@@ -5,10 +5,12 @@ node_modules/
 npm-debug.log
 yarn-error.log
 
+# Android and iOS build directories
+android/
+ios/
+
 # Expo
 .expo/
-dist/
-web-build/
 expo-env.d.ts
 
 # Native

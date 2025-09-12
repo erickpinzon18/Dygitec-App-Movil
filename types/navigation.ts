@@ -27,6 +27,11 @@ export type RootStackParamList = {
     title: string;
     subtitle?: string;
   };
+  
+  // Repair Note Display
+  RepairNoteDisplay: {
+    repair: RepairWithDetails;
+  };
 };
 
 export type RepairsStackParamList = {
