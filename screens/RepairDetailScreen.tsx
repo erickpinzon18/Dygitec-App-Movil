@@ -11,13 +11,15 @@ import {
     FlatList,
     ActionSheetIOS,
     Platform,
+    Modal,
+    Dimensions,
 } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { Picker } from "@react-native-picker/picker";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { repairService } from "../services/firebase";
-import { RepairWithDetails, RepairStatus, Priority } from "../types";
+import { repairService, storageService } from "../services/firebase";
+import { RepairWithDetails, RepairStatus, Priority, EvidencePhoto } from "../types";
 import { RepairsStackParamList } from "../types/navigation";
 import { Button } from "../components/Button";
 import { InputField } from "../components/InputField";
@@ -34,7 +36,16 @@ export const RepairDetailScreen: React.FC<RepairDetailScreenProps> = ({
     route,
 }) => {
     const { repair: initialRepair } = route.params;
-    const [repair, setRepair] = useState(initialRepair);
+    
+    // Deserializar fechas de ISO strings a objetos Date
+    const deserializedRepair = {
+        ...initialRepair,
+        entryDate: initialRepair.entryDate ? new Date(initialRepair.entryDate) : undefined,
+        expectedCompletionDate: initialRepair.expectedCompletionDate ? new Date(initialRepair.expectedCompletionDate) : undefined,
+        completionDate: initialRepair.completionDate ? new Date(initialRepair.completionDate) : undefined,
+    };
+    
+    const [repair, setRepair] = useState(deserializedRepair);
     const [isEditing, setIsEditing] = useState(false);
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
@@ -46,6 +57,46 @@ export const RepairDetailScreen: React.FC<RepairDetailScreenProps> = ({
     
     // Estado para evidencias fotográficas
     const [evidenceImages, setEvidenceImages] = useState<string[]>([]);
+    const [evidencePhotos, setEvidencePhotos] = useState<EvidencePhoto[]>([]);
+    const [uploadProgress, setUploadProgress] = useState<number>(0);
+    const [isUploading, setIsUploading] = useState(false);
+    
+    // Estado para modal de imagen en grande
+    const [selectedImage, setSelectedImage] = useState<EvidencePhoto | null>(null);
+    const [imageModalVisible, setImageModalVisible] = useState(false);
+
+    // Cargar evidencias existentes al montar el componente
+    useEffect(() => {
+        loadExistingEvidences();
+    }, []);
+
+    const loadExistingEvidences = async () => {
+        try {
+            if (!repair.customer?.id || !repair.equipment?.id) {
+                return;
+            }
+
+            const existingPhotos = await storageService.getRepairEvidencePhotos(
+                repair.clientId,
+                repair.customer.id,
+                repair.equipment.id,
+                repair.id
+            );
+
+            const evidenceObjects: EvidencePhoto[] = existingPhotos.map((url, index) => ({
+                id: `existing_${index}`,
+                repairId: repair.id,
+                url,
+                filename: `evidence_${index}.jpg`,
+                uploadedAt: new Date(), // En una implementación real, esto vendría de metadata
+                uploadedBy: 'unknown', // En una implementación real, esto vendría de metadata
+            }));
+
+            setEvidencePhotos(evidenceObjects);
+        } catch (error) {
+            console.error('Error loading existing evidences:', error);
+        }
+    };
 
     const getStatusColor = (status: RepairStatus) => {
         switch (status) {
@@ -124,13 +175,14 @@ export const RepairDetailScreen: React.FC<RepairDetailScreenProps> = ({
 
             await repairService.update(repair.id, updateData);
 
-            // Update local state
-            setRepair({
-                ...repair,
-                ...updateData,
-                completionDate:
-                    updateData.completionDate || repair.completionDate,
-            });
+            // Actualizar estado local solo con campos básicos (no fechas)
+            setRepair(prevRepair => ({
+                ...prevRepair,
+                status: formData.status,
+                priority: formData.priority,
+                notes: formData.notes || "",
+                cost: formData.cost ? parseFloat(formData.cost) : prevRepair.cost || 0,
+            }));
 
             setIsEditing(false);
             Alert.alert("Éxito", "Reparación actualizada exitosamente");
@@ -265,19 +317,88 @@ export const RepairDetailScreen: React.FC<RepairDetailScreenProps> = ({
         );
     };
 
-    const handleSaveEvidences = () => {
-        Alert.alert(
-            'Guardar Evidencias',
-            `Se guardarán ${evidenceImages.length} evidencias fotográficas. Esta funcionalidad estará disponible pronto.`
-        );
+    const handleSaveEvidences = async () => {
+        if (evidenceImages.length === 0) {
+            Alert.alert('Sin evidencias', 'No hay evidencias para guardar');
+            return;
+        }
+
+        setIsUploading(true);
+        setUploadProgress(0);
+
+        try {
+            // Verificar que tenemos los IDs necesarios
+            if (!repair.customer?.id || !repair.equipment?.id) {
+                throw new Error('Información incompleta del cliente o equipo');
+            }
+
+            const downloadURLs = await storageService.uploadMultipleEvidencePhotos(
+                evidenceImages,
+                repair.clientId,
+                repair.customer.id,
+                repair.equipment.id,
+                repair.id,
+                (progress, currentIndex) => {
+                    setUploadProgress(progress);
+                }
+            );
+
+            // Crear objetos EvidencePhoto para el estado local
+            const newEvidencePhotos: EvidencePhoto[] = downloadURLs.map((url, index) => ({
+                id: `evidence_${Date.now()}_${index}`,
+                repairId: repair.id,
+                url,
+                filename: `photo_${Date.now()}_${index}.jpg`,
+                uploadedAt: new Date(),
+                uploadedBy: 'current_user', // TODO: obtener del contexto de usuario
+            }));
+
+            // Actualizar el estado local
+            setEvidencePhotos(prev => [...prev, ...newEvidencePhotos]);
+            
+            // Limpiar las imágenes locales
+            setEvidenceImages([]);
+            
+            Alert.alert(
+                'Éxito', 
+                `Se guardaron ${downloadURLs.length} evidencias fotográficas correctamente`
+            );
+
+        } catch (error) {
+            console.error('Error saving evidences:', error);
+            Alert.alert(
+                'Error', 
+                'No se pudieron guardar las evidencias. Intenta nuevamente.'
+            );
+        } finally {
+            setIsUploading(false);
+            setUploadProgress(0);
+        }
     };
 
     const previewImage = (imageUri: string, index: number) => {
+        // Crear objeto temporal para imagen local
+        const tempEvidencePhoto: EvidencePhoto = {
+            id: `temp_${index}`,
+            repairId: repair.id,
+            url: imageUri,
+            filename: `evidencia_local_${index + 1}.jpg`,
+            uploadedAt: new Date(),
+            uploadedBy: 'Usuario actual',
+        };
+        
         Alert.alert(
-            `Evidencia ${index + 1}`,
+            `Evidencia Local ${index + 1}`,
             'Opciones de la imagen',
             [
                 { text: 'Cerrar', style: 'cancel' },
+                {
+                    text: 'Ver en Grande',
+                    onPress: () => {
+                        setSelectedImage(tempEvidencePhoto);
+                        setImageModalVisible(true);
+                    }
+                },
                 {
                     text: 'Eliminar',
                     style: 'destructive',
@@ -285,6 +406,11 @@ export const RepairDetailScreen: React.FC<RepairDetailScreenProps> = ({
                 }
             ]
         );
+    };
+
+    const previewSavedImage = (evidencePhoto: EvidencePhoto, index: number) => {
+        setSelectedImage(evidencePhoto);
+        setImageModalVisible(true);
     };
 
     if (loading) {
@@ -560,36 +686,76 @@ export const RepairDetailScreen: React.FC<RepairDetailScreenProps> = ({
                         )}
                     </View>
                     
-                    {evidenceImages.length > 0 ? (
+                    {(evidenceImages.length > 0 || evidencePhotos.length > 0) ? (
                         <View style={styles.evidenceContainer}>
-                            <FlatList
-                                data={evidenceImages}
-                                horizontal
-                                showsHorizontalScrollIndicator={false}
-                                keyExtractor={(item, index) => `evidence-${index}`}
-                                renderItem={({ item, index }) => (
-                                    <View style={styles.evidenceItem}>
-                                        <TouchableOpacity
-                                            onPress={() => previewImage(item, index)}
-                                            style={styles.imageContainer}
-                                        >
-                                            <Image source={{ uri: item }} style={styles.evidenceImage} />
-                                        </TouchableOpacity>
-                                        {isEditing && (
-                                            <TouchableOpacity
-                                                style={styles.removeEvidenceButton}
-                                                onPress={() => handleRemoveEvidence(index)}
-                                            >
-                                                <Ionicons name="close-circle" size={24} color={colors.error} />
-                                            </TouchableOpacity>
+                            {/* Evidencias guardadas en Firebase */}
+                            {evidencePhotos.length > 0 && (
+                                <View>
+                                    <Text style={styles.evidenceSectionTitle}>Evidencias Guardadas</Text>
+                                    <FlatList
+                                        data={evidencePhotos}
+                                        horizontal
+                                        showsHorizontalScrollIndicator={false}
+                                        keyExtractor={(item) => item.id}
+                                        renderItem={({ item, index }) => (
+                                            <View style={styles.evidenceItem}>
+                                                <TouchableOpacity
+                                                    onPress={() => previewSavedImage(item, index)}
+                                                    style={styles.imageContainer}
+                                                >
+                                                    <Image source={{ uri: item.url }} style={styles.evidenceImage} />
+                                                </TouchableOpacity>
+                                                <Text style={styles.evidenceLabel}>Guardada {index + 1}</Text>
+                                            </View>
                                         )}
-                                        <Text style={styles.evidenceLabel}>Evidencia {index + 1}</Text>
-                                    </View>
-                                )}
-                                contentContainerStyle={styles.evidenceList}
-                            />
+                                        contentContainerStyle={styles.evidenceList}
+                                    />
+                                </View>
+                            )}
+
+                            {/* Evidencias locales pendientes de guardar */}
+                            {evidenceImages.length > 0 && (
+                                <View>
+                                    <Text style={styles.evidenceSectionTitle}>
+                                        Evidencias Pendientes {isUploading && `(Subiendo... ${uploadProgress.toFixed(0)}%)`}
+                                    </Text>
+                                    <FlatList
+                                        data={evidenceImages}
+                                        horizontal
+                                        showsHorizontalScrollIndicator={false}
+                                        keyExtractor={(item, index) => `local-${index}`}
+                                        renderItem={({ item, index }) => (
+                                            <View style={styles.evidenceItem}>
+                                                <TouchableOpacity
+                                                    onPress={() => previewImage(item, index)}
+                                                    style={styles.imageContainer}
+                                                >
+                                                    <Image source={{ uri: item }} style={styles.evidenceImage} />
+                                                    {isUploading && (
+                                                        <View style={styles.uploadOverlay}>
+                                                            <Text style={styles.uploadText}>
+                                                                {uploadProgress.toFixed(0)}%
+                                                            </Text>
+                                                        </View>
+                                                    )}
+                                                </TouchableOpacity>
+                                                {isEditing && !isUploading && (
+                                                    <TouchableOpacity
+                                                        style={styles.removeEvidenceButton}
+                                                        onPress={() => handleRemoveEvidence(index)}
+                                                    >
+                                                        <Ionicons name="close-circle" size={24} color={colors.error} />
+                                                    </TouchableOpacity>
+                                                )}
+                                                <Text style={styles.evidenceLabel}>Evidencia {index + 1}</Text>
+                                            </View>
+                                        )}
+                                        contentContainerStyle={styles.evidenceList}
+                                    />
+                                </View>
+                            )}
                             
-                            {isEditing && (
+                            {isEditing && evidenceImages.length > 0 && !isUploading && (
                                 <View style={styles.evidenceActions}>
                                     <Button
                                         title="💾 Guardar Evidencias"
@@ -689,6 +855,89 @@ export const RepairDetailScreen: React.FC<RepairDetailScreenProps> = ({
                     )}
                 </View>
             </ScrollView>
+            
+            {/* Modal para ver imagen en grande */}
+            <Modal
+                visible={imageModalVisible}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setImageModalVisible(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContainer}>
+                        {/* Header del modal */}
+                        <View style={styles.modalHeader}>
+                            <View>
+                                <Text style={styles.modalTitle}>Evidencia Fotográfica</Text>
+                                {selectedImage && (
+                                    <Text style={styles.modalSubtitle}>
+                                        {selectedImage.id.startsWith('temp_') ? '📱 Pendiente de guardar' : '☁️ Guardada en Firebase'}
+                                    </Text>
+                                )}
+                            </View>
+                            <TouchableOpacity
+                                style={styles.closeButton}
+                                onPress={() => setImageModalVisible(false)}
+                            >
+                                <Ionicons name="close" size={24} color={colors.text} />
+                            </TouchableOpacity>
+                        </View>
+                        
+                        {/* Imagen en grande */}
+                        {selectedImage && (
+                            <>
+                                <View style={styles.imageFullContainer}>
+                                    <Image 
+                                        source={{ uri: selectedImage.url }} 
+                                        style={styles.imageFullSize}
+                                        resizeMode="contain"
+                                    />
+                                </View>
+                                
+                                {/* Información de la evidencia */}
+                                <View style={styles.imageInfoContainer}>
+                                    <View style={styles.modalInfoRow}>
+                                        <Ionicons name="calendar-outline" size={16} color={colors.textSecondary} />
+                                        <Text style={styles.modalInfoLabel}>Fecha:</Text>
+                                        <Text style={styles.modalInfoValue}>
+                                            {selectedImage.uploadedAt.toLocaleDateString('es-ES', {
+                                                year: 'numeric',
+                                                month: 'long',
+                                                day: 'numeric'
+                                            })}
+                                        </Text>
+                                    </View>
+                                    
+                                    <View style={styles.modalInfoRow}>
+                                        <Ionicons name="time-outline" size={16} color={colors.textSecondary} />
+                                        <Text style={styles.modalInfoLabel}>Hora:</Text>
+                                        <Text style={styles.modalInfoValue}>
+                                            {selectedImage.uploadedAt.toLocaleTimeString('es-ES', {
+                                                hour: '2-digit',
+                                                minute: '2-digit'
+                                            })}
+                                        </Text>
+                                    </View>
+                                    
+                                    <View style={styles.modalInfoRow}>
+                                        <Ionicons name="build-outline" size={16} color={colors.textSecondary} />
+                                        <Text style={styles.modalInfoLabel}>Reparación:</Text>
+                                        <Text style={styles.modalInfoValue}>{repair.title}</Text>
+                                    </View>
+                                </View>
+                            </>
+                        )}
+                        
+                        {/* Botón de cerrar */}
+                        <TouchableOpacity
+                            style={styles.modalCloseButton}
+                            onPress={() => setImageModalVisible(false)}
+                        >
+                            <Text style={styles.modalCloseText}>Cerrar</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 };
@@ -800,7 +1049,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: spacing.md,
+        // marginBottom: spacing.md,
     },
     addEvidenceButton: {
         flexDirection: 'row',
@@ -819,12 +1068,13 @@ const styles = StyleSheet.create({
         marginLeft: spacing.xs,
     },
     evidenceContainer: {
-        marginTop: spacing.sm,
+        // marginTop: spacing.sm,
     },
     evidenceList: {
         paddingRight: spacing.lg,
     },
     evidenceItem: {
+        marginTop: 10,
         marginRight: spacing.md,
         alignItems: 'center',
         position: 'relative',
@@ -886,5 +1136,113 @@ const styles = StyleSheet.create({
         color: colors.background,
         fontWeight: '600',
         textAlign: 'center',
+    },
+    // Estilos para evidencias de Firebase Storage
+    evidenceSectionTitle: {
+        ...typography.h3,
+        color: colors.text,
+        marginBottom: spacing.sm,
+        marginTop: spacing.md,
+    },
+    uploadOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderRadius: 8,
+    },
+    uploadText: {
+        ...typography.bodySmall,
+        color: colors.background,
+        fontWeight: '600',
+    },
+    // Estilos para modal de imagen en grande
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.9)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalContainer: {
+        backgroundColor: colors.background,
+        borderRadius: 16,
+        padding: spacing.lg,
+        margin: spacing.lg,
+        maxHeight: '90%',
+        width: '90%',
+        ...shadows.lg,
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: spacing.sm,
+        paddingBottom: spacing.md,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.border,
+    },
+    modalTitle: {
+        ...typography.h2,
+        color: colors.text,
+    },
+    modalSubtitle: {
+        ...typography.bodySmall,
+        color: colors.textSecondary,
+        marginTop: spacing.xs,
+    },
+    closeButton: {
+        padding: spacing.xs,
+        borderRadius: 20,
+        backgroundColor: colors.surface,
+    },
+    imageFullContainer: {
+        alignItems: 'center',
+        backgroundColor: colors.surface,
+        borderRadius: 12,
+        padding: spacing.sm,
+    },
+    imageFullSize: {
+        width: Dimensions.get('window').width * 0.7,
+        height: Dimensions.get('window').height * 0.4,
+        borderRadius: 8,
+    },
+    imageInfoContainer: {
+        backgroundColor: colors.surface,
+        borderRadius: 12,
+        padding: spacing.md,
+    },
+    modalInfoRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: spacing.sm,
+    },
+    modalInfoLabel: {
+        ...typography.bodySmall,
+        color: colors.textSecondary,
+        fontWeight: '600',
+        marginLeft: spacing.sm,
+        minWidth: 80,
+    },
+    modalInfoValue: {
+        ...typography.body,
+        color: colors.text,
+        flex: 1,
+        marginLeft: spacing.sm,
+    },
+    modalCloseButton: {
+        backgroundColor: colors.primary,
+        borderRadius: 8,
+        paddingVertical: spacing.md,
+        paddingHorizontal: spacing.xl,
+        alignItems: 'center',
+    },
+    modalCloseText: {
+        ...typography.button,
+        color: colors.background,
+        fontWeight: '600',
     },
 });

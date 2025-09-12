@@ -145,3 +145,22 @@ export interface CustomerWithStats extends Customer {
   activeRepairs: number;
   lastRepairDate?: Date;
 }
+
+// Evidence photo types
+export interface EvidencePhoto {
+  id: string;
+  repairId: string;
+  url: string;
+  filename: string;
+  uploadedAt: Date;
+  uploadedBy: string;
+  size?: number;
+  mimeType?: string;
+}
+
+export interface EvidenceUploadProgress {
+  totalProgress: number;
+  currentIndex: number;
+  currentFile: string;
+  isComplete: boolean;
+}

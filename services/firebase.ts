@@ -20,7 +20,14 @@ import {
   orderBy, 
   Timestamp 
 } from 'firebase/firestore';
-import { auth, db } from '../config/firebase';
+import { 
+  ref, 
+  uploadBytesResumable, 
+  getDownloadURL, 
+  deleteObject,
+  listAll 
+} from 'firebase/storage';
+import { auth, db, storage } from '../config/firebase';
 import { Client, User, Customer, Computer, Equipment, Repair, Part, RepairWithDetails, EquipmentWithDetails, CustomerWithStats, RepairStatus } from '../types';
 
 // Authentication services
@@ -611,5 +618,183 @@ export const partService = {
 
   delete: async (id: string) => {
     await deleteDoc(doc(db, 'parts', id));
+  }
+};
+
+// Storage services for evidence photos
+export const storageService = {
+  /**
+   * Upload evidence photo with structured path
+   * Path: /clients/{clientId}/customers/{customerId}/equipment/{equipmentId}/repairs/{repairId}/photo_{timestamp}.jpg
+   */
+  uploadEvidencePhoto: async (
+    imageUri: string,
+    clientId: string,
+    customerId: string,
+    equipmentId: string,
+    repairId: string,
+    onProgress?: (progress: number) => void
+  ): Promise<string> => {
+    try {
+      // Convert image URI to blob
+      const response = await fetch(imageUri);
+      const blob = await response.blob();
+      
+      // Generate unique filename with timestamp
+      const timestamp = new Date().getTime();
+      const filename = `photo_${timestamp}.jpg`;
+      
+      // Create structured path
+      const storagePath = `clients/${clientId}/customers/${customerId}/equipment/${equipmentId}/repairs/${repairId}/${filename}`;
+      
+      // Create storage reference
+      const storageRef = ref(storage, storagePath);
+      
+      // Upload with progress monitoring
+      const uploadTask = uploadBytesResumable(storageRef, blob);
+      
+      return new Promise((resolve, reject) => {
+        uploadTask.on(
+          'state_changed',
+          (snapshot) => {
+            // Progress monitoring
+            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+            if (onProgress) {
+              onProgress(progress);
+            }
+          },
+          (error) => {
+            console.error('Upload error:', error);
+            reject(error);
+          },
+          async () => {
+            // Upload completed successfully
+            try {
+              const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+              resolve(downloadURL);
+            } catch (error) {
+              reject(error);
+            }
+          }
+        );
+      });
+    } catch (error) {
+      console.error('Error uploading evidence photo:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Upload multiple evidence photos
+   */
+  uploadMultipleEvidencePhotos: async (
+    imageUris: string[],
+    clientId: string,
+    customerId: string,
+    equipmentId: string,
+    repairId: string,
+    onProgress?: (totalProgress: number, currentIndex: number) => void
+  ): Promise<string[]> => {
+    const uploadPromises = imageUris.map((uri, index) => {
+      return storageService.uploadEvidencePhoto(
+        uri,
+        clientId,
+        customerId,
+        equipmentId,
+        repairId,
+        (progress) => {
+          if (onProgress) {
+            const totalProgress = ((index * 100) + progress) / imageUris.length;
+            onProgress(totalProgress, index);
+          }
+        }
+      );
+    });
+
+    try {
+      const downloadURLs = await Promise.all(uploadPromises);
+      return downloadURLs;
+    } catch (error) {
+      console.error('Error uploading multiple photos:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get all evidence photos for a repair
+   */
+  getRepairEvidencePhotos: async (
+    clientId: string,
+    customerId: string,
+    equipmentId: string,
+    repairId: string
+  ): Promise<string[]> => {
+    try {
+      const folderPath = `clients/${clientId}/customers/${customerId}/equipment/${equipmentId}/repairs/${repairId}/`;
+      const folderRef = ref(storage, folderPath);
+      
+      const result = await listAll(folderRef);
+      const downloadURLs = await Promise.all(
+        result.items.map(item => getDownloadURL(item))
+      );
+      
+      return downloadURLs;
+    } catch (error) {
+      console.error('Error getting repair evidence photos:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Delete evidence photo
+   */
+  deleteEvidencePhoto: async (photoURL: string): Promise<void> => {
+    try {
+      const photoRef = ref(storage, photoURL);
+      await deleteObject(photoRef);
+    } catch (error) {
+      console.error('Error deleting evidence photo:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Delete all evidence photos for a repair
+   */
+  deleteAllRepairEvidencePhotos: async (
+    clientId: string,
+    customerId: string,
+    equipmentId: string,
+    repairId: string
+  ): Promise<void> => {
+    try {
+      const folderPath = `clients/${clientId}/customers/${customerId}/equipment/${equipmentId}/repairs/${repairId}/`;
+      const folderRef = ref(storage, folderPath);
+      
+      const result = await listAll(folderRef);
+      const deletePromises = result.items.map(item => deleteObject(item));
+      
+      await Promise.all(deletePromises);
+    } catch (error) {
+      console.error('Error deleting all repair evidence photos:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Generate structured storage path
+   */
+  generateEvidencePath: (
+    clientId: string,
+    customerId: string,
+    equipmentId: string,
+    repairId: string,
+    filename?: string
+  ): string => {
+    const timestamp = new Date().getTime();
+    const defaultFilename = `photo_${timestamp}.jpg`;
+    const finalFilename = filename || defaultFilename;
+    
+    return `clients/${clientId}/customers/${customerId}/equipment/${equipmentId}/repairs/${repairId}/${finalFilename}`;
   }
 };

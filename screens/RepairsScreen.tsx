@@ -168,7 +168,16 @@ export const RepairsScreen: React.FC<RepairsScreenProps> = ({ navigation }) => {
   const renderRepairItem = ({ item }: { item: RepairWithDetails }) => (
     <TouchableOpacity
       style={styles.repairCard}
-      onPress={() => navigation.navigate('RepairDetail', { repair: item })}
+      onPress={() => {
+        // Serializar fechas a ISO strings para evitar problemas de navegación
+        const serializedRepair = {
+          ...item,
+          entryDate: item.entryDate?.toISOString() || null,
+          expectedCompletionDate: item.expectedCompletionDate?.toISOString() || null,
+          completionDate: item.completionDate?.toISOString() || null,
+        };
+        navigation.navigate('RepairDetail', { repair: serializedRepair as any });
+      }}
     >
       <View style={styles.repairHeader}>
         <Text style={styles.repairTitle}>{item.title}</Text>
