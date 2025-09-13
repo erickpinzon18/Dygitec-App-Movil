@@ -48,6 +48,8 @@ export const RepairNoteDisplayScreen: React.FC<RepairNoteDisplayScreenProps> = (
         return "En Progreso";
       case RepairStatus.WAITING_PARTS:
         return "Esperando Piezas";
+      case RepairStatus.WAITING_AUTHORIZATION:
+        return "Espera de autorización";
       case RepairStatus.COMPLETED:
         return "Completada";
       case RepairStatus.DELIVERED:

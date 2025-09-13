@@ -342,19 +342,41 @@ export const BarcodeDisplayScreen: React.FC<QRDisplayScreenProps> = ({
   const handleShare = async () => {
     try {
       setLoading(true);
+      
+      // Solicitar permisos para acceder a la galería
+      const { status } = await MediaLibrary.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          'Permisos requeridos',
+          'Se necesitan permisos para guardar y compartir la imagen'
+        );
+        return;
+      }
+
+      // Capturar y generar la imagen
       const imageUri = await captureQR();
       
       if (imageUri) {
-        await Share.share({
-          url: imageUri,
-          title: `Código QR - ${getTypeInfo(type).name}: ${title}`,
-        });
+        // Guardar en la galería primero
+        await MediaLibrary.saveToLibraryAsync(imageUri);
+        
+        // Usar expo-sharing que es más confiable para imágenes
+        if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(imageUri, {
+            mimeType: 'image/jpeg',
+            dialogTitle: 'Compartir Código QR',
+          });
+          
+          Alert.alert('Éxito', 'Imagen compartida correctamente');
+        } else {
+          Alert.alert('Error', 'No se puede compartir en este dispositivo');
+        }
       } else {
         Alert.alert('Error', 'No se pudo generar la imagen del código QR');
       }
     } catch (error) {
       console.error('Error sharing:', error);
-      Alert.alert('Error', 'No se pudo compartir');
+      Alert.alert('Error', 'No se pudo compartir la imagen');
     } finally {
       setLoading(false);
     }

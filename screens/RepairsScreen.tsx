@@ -135,6 +135,8 @@ export const RepairsScreen: React.FC<RepairsScreenProps> = ({ navigation }) => {
         return colors.primary;
       case RepairStatus.WAITING_PARTS:
         return colors.secondary;
+      case RepairStatus.WAITING_AUTHORIZATION:
+        return colors.secondary;
       case RepairStatus.COMPLETED:
         return colors.success;
       case RepairStatus.DELIVERED:
@@ -154,6 +156,8 @@ export const RepairsScreen: React.FC<RepairsScreenProps> = ({ navigation }) => {
         return 'En Progreso';
       case RepairStatus.WAITING_PARTS:
         return 'Esperando Piezas';
+      case RepairStatus.WAITING_AUTHORIZATION:
+        return 'Espera de autorización';
       case RepairStatus.COMPLETED:
         return 'Completada';
       case RepairStatus.DELIVERED:
@@ -281,6 +285,7 @@ export const RepairsScreen: React.FC<RepairsScreenProps> = ({ navigation }) => {
           <FilterButton status={RepairStatus.PENDING} title="Pendientes" />
           <FilterButton status={RepairStatus.IN_PROGRESS} title="En Progreso" />
           <FilterButton status={RepairStatus.WAITING_PARTS} title="Esperando Piezas" />
+          <FilterButton status={RepairStatus.WAITING_AUTHORIZATION} title="Espera de autorización" />
           <FilterButton status={RepairStatus.COMPLETED} title="Completadas" />
           <FilterButton status={RepairStatus.DELIVERED} title="Entregadas" />
           <FilterButton status={RepairStatus.CANCELLED} title="Canceladas" />

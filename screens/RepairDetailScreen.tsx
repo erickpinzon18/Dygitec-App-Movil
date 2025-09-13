@@ -106,6 +106,8 @@ export const RepairDetailScreen: React.FC<RepairDetailScreenProps> = ({
                 return colors.primary;
             case RepairStatus.WAITING_PARTS:
                 return colors.secondary;
+            case RepairStatus.WAITING_AUTHORIZATION:
+                return colors.secondary;
             case RepairStatus.COMPLETED:
                 return colors.success;
             case RepairStatus.DELIVERED:
@@ -125,6 +127,8 @@ export const RepairDetailScreen: React.FC<RepairDetailScreenProps> = ({
                 return "En Progreso";
             case RepairStatus.WAITING_PARTS:
                 return "Esperando Piezas";
+            case RepairStatus.WAITING_AUTHORIZATION:
+                return "Espera de autorización";
             case RepairStatus.COMPLETED:
                 return "Completada";
             case RepairStatus.DELIVERED:
@@ -562,6 +566,10 @@ export const RepairDetailScreen: React.FC<RepairDetailScreenProps> = ({
                                         <Picker.Item
                                             label="Esperando Piezas"
                                             value={RepairStatus.WAITING_PARTS}
+                                        />
+                                        <Picker.Item
+                                            label="Espera de autorización"
+                                            value={RepairStatus.WAITING_AUTHORIZATION}
                                         />
                                         <Picker.Item
                                             label="Completada"
